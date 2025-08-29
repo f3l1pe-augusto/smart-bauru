@@ -98,3 +98,74 @@ body, html {
 .select-items div:hover {
   background-color: #f0f0f0;
 }
+
+.marcador-personalizado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 14px;
+}
+
+.marcador-vermelho {
+  background-color: #e74c3c;
+  border: 2px solid #c0392b;
+}
+
+.marcador-laranja {
+  background-color: #e67e22;
+  border: 2px solid #d35400;
+}
+
+.marcador-verde {
+  background-color: #2ecc71;
+  border: 2px solid #27ae60;
+}
+
+.marcador-azul {
+  background-color: #3498db;
+  border: 2px solid #2980b9;
+}
+
+.marcador-rosa {
+  background-color: #e84393;
+  border: 2px solid #d63031;
+}
+
+.marcador-cinza {
+  background-color: #7f8c8d;
+  border: 2px solid #2c3e50;
+}
+
+.marcador-preto {
+  background-color: #34495e;
+  border: 2px solid #2c3e50;
+}
+
+.marcador-roxo {
+  background-color: #9b59b6;
+  border: 2px solid #8e44ad;
+}
+
+.marcador-amarelo {
+  background-color: #f1c40f;
+  border: 2px solid #f39c12;
+}
+
+.marcador-marrom {
+  background-color: #a0522d;
+  border: 2px solid #8b4513;
+}
+
+.marcador-azul-claro {
+  background-color: #1abc9c;
+  border: 2px solid #16a085;
+}
+
+.marcador-personalizado i {
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+

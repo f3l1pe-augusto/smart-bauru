@@ -8,6 +8,117 @@ document.addEventListener('DOMContentLoaded', () => {
 
   marcadoresLayer.addTo(map);
 
+  const iconesPorTema = {
+    "Clima": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-cloud-rain" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-azul',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Crimes": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-gun" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-laranja',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Drogas e tráfico": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-user-secret" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-roxo',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Emergências": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-exclamation-triangle" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-vermelho',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Infraestrutura": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-building" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-cinza',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Meio ambiente": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-leaf" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-verde',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Mortes e ferimentos": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-ambulance" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-preto',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Problemas sociais": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-users" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-rosa',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Reclamações": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-volume-up" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-amarelo',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Trânsito": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-car" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-marrom',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "Saúde": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-hospital" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-azul-claro',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    },
+    "default": {
+      icone: L.divIcon({
+        html: '<i class="fa fa-map-marker-alt" style="color: white;"></i>',
+        className: 'marcador-personalizado marcador-cinza',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+      })
+    }
+  };
+
   L.Control.Filter = L.Control.extend({
     onAdd: function(map) {
       const container = L.DomUtil.create('div', 'leaflet-control-filter');
@@ -82,12 +193,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const popupContent = `
               <h4 style='margin-bottom:5px; font-size:16px;'>${ocorrencia.title}</h4>
               <hr style='margin: 2px;'>
-              <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
+              <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
               <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
+              <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
               <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
               <a href='${ocorrencia.link}' target='_blank'>Ler notícia completa</a>
             `;
-        L.marker([ocorrencia.latitude, ocorrencia.longitude])
+
+        const iconeConfig = iconesPorTema[ocorrencia.tema] || iconesPorTema.default;
+
+        L.marker([ocorrencia.latitude, ocorrencia.longitude], { icon: iconeConfig.icone })
             .bindPopup(popupContent)
             .addTo(marcadoresLayer);
       });
