@@ -19,15 +19,18 @@ Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorr
    git clone [https://github.com/f3l1pe-augusto/smart-bauru.git](https://github.com/f3l1pe-augusto/smart-bauru.git)
    cd smart-bauru
    ```
+   
 2. Crie um ambiente virtual e ative-o:
    ```bash
    python -m venv venv
    source venv/bin/activate  # No Windows use `venv\Scripts\activate`
    ```
+   
 3. Instale as dependências:
    ```bash
    pip install -r requirements.txt
    ```
+   
 4. Execute o backend:
    ```bash
    python app.py
