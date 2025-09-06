@@ -203,20 +203,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       container.innerHTML = `
             <h3>Filtros</h3>
-    
+      
             <label>Filtrar por Tema:</label>
             <div class="custom-select" id="tema-wrapper">
-              <div class="select-selected" data-value="todos">Todos os Temas</div>
+              <div class="select-selected" data-value="">Selecione um Tema</div>
               <div class="select-items select-hide">
-                <div data-value="todos">Todos os Temas</div>
               </div>
             </div>
-    
+      
             <label>Filtrar por Ano:</label>
             <div class="custom-select" id="ano-wrapper">
-              <div class="select-selected" data-value="todos">Todos os Anos</div>
+              <div class="select-selected" data-value="">Selecione um Ano</div>
               <div class="select-items select-hide">
-                <div data-value="todos">Todos os Anos</div>
               </div>
             </div>
           `;
@@ -338,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const todasOcorrencias = await response.json();
 
       popularFiltros(todasOcorrencias);
-      await carregarOcorrencias();
     } catch (error) {
       console.error("Erro na inicialização da página:", error);
       alert("Falha ao carregar os dados iniciais.");
