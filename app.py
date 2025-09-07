@@ -108,5 +108,59 @@ def get_ocorrencias():
   dados_para_json = df_limpo.to_dict(orient='records')
   return jsonify(dados_para_json)
 
+@app.route('/api/ocorrencias-recorrentes', methods=['GET'])
+def get_ocorrencias_recorrentes():
+  print("Requisição recebida em /api/ocorrencias-recorrentes")
+  ano_filtro = request.args.get('ano')
+  tema_filtro = request.args.get('tema')
+  df_filtrado = dataframe_global.copy()
+
+  if ano_filtro:
+    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
+    df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
+    print(f"Filtrando por ano: {ano_filtro}")
+
+  if tema_filtro:
+    df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
+    print(f"Filtrando por tema: {tema_filtro}")
+
+  if df_filtrado.empty:
+    return jsonify([])
+
+  precisao = 3
+  df_filtrado = df_filtrado.copy()
+  df_filtrado['chave_local'] = list(zip(
+    round(df_filtrado['latitude'], precisao),
+    round(df_filtrado['longitude'], precisao)
+  ))
+
+  enderecos_por_local = df_filtrado.groupby('chave_local')['address'].agg(
+    lambda x: x.mode().iloc[0] if not x.empty else 'Endereço não disponível'
+  )
+
+  recorrencias = df_filtrado.groupby(['chave_local', 'tema']).size()
+  recorrencias = recorrencias[recorrencias > 7]
+  df_recorrencias = recorrencias.reset_index(name='contagem')
+
+  if df_recorrencias.empty:
+    return jsonify([])
+
+  df_recorrencias['endereco_comum'] = df_recorrencias['chave_local'].map(enderecos_por_local)
+  df_recorrencias = df_recorrencias.sort_values('contagem', ascending=False)
+
+  resultado = []
+  for _, row in df_recorrencias.iterrows():
+    lat, lon = row['chave_local']
+    resultado.append({
+      'latitude': lat,
+      'longitude': lon,
+      'tema': row['tema'],
+      'contagem': int(row['contagem']),
+      'endereco_comum': row['endereco_comum']
+    })
+
+  print(f"Encontradas {len(resultado)} ocorrências recorrentes")
+  return jsonify(resultado)
+
 if __name__ == '__main__':
   app.run(debug=True, port=5001)

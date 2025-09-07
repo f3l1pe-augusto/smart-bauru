@@ -1,8 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   let marcadoresLayer = L.layerGroup();
+  let recurrentesLayer = L.layerGroup();
   let heatmapLayer = null;
-  let currentViewMode = 'markers'; // 'markers' ou 'heatmap'
-  let currentData = []; // Armazenar dados atuais
+  let currentViewMode = 'markers';
+  let currentData = [];
+  let currentRecurrentData = [];
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -197,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     onRemove: function(map) {}
   });
+
   L.Control.Filter = L.Control.extend({
     onAdd: function(map) {
       const container = L.DomUtil.create('div', 'leaflet-control-filter');
@@ -245,6 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa fa-fire"></i>
             Mapa de Calor
           </button>
+          <button class="view-option" data-view="recurrent">
+            <i class="fa fa-exclamation-triangle"></i>
+            Ocorrências Recorrentes
+          </button>         
         </div>
       `;
 
@@ -340,25 +347,33 @@ document.addEventListener('DOMContentLoaded', () => {
   function atualizarVisualizacao() {
     console.log('Atualizando visualização para:', currentViewMode, 'com', currentData.length, 'dados');
 
-    if (currentViewMode === 'markers') {
-      if (heatmapLayer) {
-        map.removeLayer(heatmapLayer);
-        heatmapLayer = null;
-        console.log('Heatmap removido');
-      }
+    marcadoresLayer.clearLayers();
+    recurrentesLayer.clearLayers();
+    if (heatmapLayer) {
+      map.removeLayer(heatmapLayer);
+      heatmapLayer = null;
+    }
+    if (map.hasLayer(recurrentesLayer)) {
+      map.removeLayer(recurrentesLayer);
+    }
 
+    if (currentViewMode === 'markers') {
       if (!map.hasLayer(marcadoresLayer)) {
         marcadoresLayer.addTo(map);
       }
       exibirMarcadores(currentData);
 
     } else if (currentViewMode === 'heatmap') {
-      marcadoresLayer.clearLayers();
       if (map.hasLayer(marcadoresLayer)) {
         map.removeLayer(marcadoresLayer);
       }
-
       criarHeatmap(currentData);
+
+    } else if (currentViewMode === 'recurrent') {
+      if (map.hasLayer(marcadoresLayer)) {
+        map.removeLayer(marcadoresLayer);
+      }
+      carregarOcorrenciasRecorrentes();
     }
   }
 
@@ -384,6 +399,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function exibirRecorrentes(ocorrencias) {
+    recurrentesLayer.clearLayers();
+
+    ocorrencias.forEach(ocorrencia => {
+      const popupContent = `
+        <h4 style='margin-bottom:5px; font-size:16px;'>Ponto de ocorrência recorrente</h4>
+        <hr style='margin: 2px;'>
+        <b>Endereço:</b> ${ocorrencia.endereco_comum || 'N/A'}<br>
+        <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
+        <b>Nº de Ocorrências:</b> ${ocorrencia.contagem || 0}
+      `;
+
+      const iconeConfig = iconesPorTema[ocorrencia.tema] || iconesPorTema.default;
+
+      L.marker([ocorrencia.latitude, ocorrencia.longitude], { icon: iconeConfig.icone })
+          .bindPopup(popupContent)
+          .addTo(recurrentesLayer);
+    });
+
+    if (!map.hasLayer(recurrentesLayer)) {
+      recurrentesLayer.addTo(map);
+    }
+  }
+
+  async function carregarOcorrenciasRecorrentes() {
+    const temaSelect = document.querySelector('#tema-wrapper .select-selected');
+    const anoSelect = document.querySelector('#ano-wrapper .select-selected');
+    const tema = temaSelect.dataset.value;
+    const ano = anoSelect.dataset.value;
+
+    try {
+      const url = `http://127.0.0.1:5001/api/ocorrencias-recorrentes?tema=${tema}&ano=${ano}`;
+      console.log('Carregando dados recorrentes de:', url);
+      const response = await fetch(url);
+      const ocorrenciasRecorrentes = await response.json();
+
+      console.log('Dados recorrentes recebidos:', ocorrenciasRecorrentes.length, 'pontos');
+      currentRecurrentData = ocorrenciasRecorrentes;
+
+      exibirRecorrentes(currentRecurrentData);
+
+    } catch (error) {
+      console.error('Erro ao buscar ou processar as ocorrências recorrentes:', error);
+    }
+  }
+
   async function carregarOcorrencias() {
     const temaSelect = document.querySelector('#tema-wrapper .select-selected');
     const anoSelect = document.querySelector('#ano-wrapper .select-selected');
@@ -399,7 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Dados recebidos:', ocorrencias.length, 'ocorrências');
       currentData = ocorrencias;
 
-      atualizarVisualizacao();
+      if (currentViewMode === 'recurrent') {
+        await carregarOcorrenciasRecorrentes();
+      } else {
+        atualizarVisualizacao();
+      }
 
     } catch (error) {
       console.error('Erro ao buscar ou processar as ocorrências:', error);

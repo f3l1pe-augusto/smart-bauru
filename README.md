@@ -10,7 +10,7 @@ Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorr
 
 ## Funcionalidades
 - Mapeamento de ocorrências urbanas
-- Visualização com marcadores ou mapa de calor
+- Visualização com marcadores, mapa de calor ou ocorrências recorrentes
 - Filtros por tipo de ocorrência e ano
 
 ## Instalação
