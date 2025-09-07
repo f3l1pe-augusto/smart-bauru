@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function init() {
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/ocorrencias?tema=todos&ano=todos');
+      const response = await fetch('http://127.0.0.1:5001/api/ocorrencias');
       const todasOcorrencias = await response.json();
 
       popularFiltros(todasOcorrencias);

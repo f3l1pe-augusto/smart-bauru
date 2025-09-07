@@ -92,12 +92,12 @@ def get_ocorrencias():
   tema_filtro = request.args.get('tema')
   df_filtrado = dataframe_global.copy()
 
-  if ano_filtro and ano_filtro != 'todos':
+  if ano_filtro:
     df_filtrado['ano'] = df_filtrado['published_date'].dt.year
     df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
     print(f"Filtrando por ano: {ano_filtro}")
 
-  if tema_filtro and tema_filtro != 'todos':
+  if tema_filtro:
     df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
     print(f"Filtrando por tema: {tema_filtro}")
 
