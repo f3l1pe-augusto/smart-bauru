@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   let marcadoresLayer = L.layerGroup();
+  let heatmapLayer = null;
+  let currentViewMode = 'markers'; // 'markers' ou 'heatmap'
+  let currentData = []; // Armazenar dados atuais
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -224,8 +227,48 @@ document.addEventListener('DOMContentLoaded', () => {
     onRemove: function(map) {}
   });
 
-  const filterControl = new L.Control.Filter({ position: 'topright' }).addTo(map);
+  L.Control.View = L.Control.extend({
+    onAdd: function(map) {
+      const container = L.DomUtil.create('div', 'leaflet-control-view');
 
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
+
+      container.innerHTML = `
+        <h3>Visualização</h3>
+        <div class="view-toggle">
+          <button class="view-option active" data-view="markers">
+            <i class="fa fa-map-marker-alt"></i>
+            Marcadores
+          </button>
+          <button class="view-option" data-view="heatmap">
+            <i class="fa fa-fire"></i>
+            Mapa de Calor
+          </button>
+        </div>
+      `;
+
+      const viewButtons = container.querySelectorAll('.view-option');
+      viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const newViewMode = this.dataset.view;
+          if (newViewMode !== currentViewMode) {
+            viewButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            currentViewMode = newViewMode;
+            atualizarVisualizacao();
+          }
+        });
+      });
+
+      return container;
+    },
+    onRemove: function(map) {}
+  });
+
+  const viewControl = new L.Control.View({ position: 'topright' }).addTo(map);
+  const filterControl = new L.Control.Filter({ position: 'topright' }).addTo(map);
   const legendControl = new L.Control.Legend({ position: 'bottomleft' }).addTo(map);
 
   function initCustomSelects() {
@@ -250,36 +293,114 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function criarHeatmap(ocorrencias) {
+    console.log('Criando heatmap com', ocorrencias.length, 'ocorrências');
+
+    if (heatmapLayer) {
+      map.removeLayer(heatmapLayer);
+      heatmapLayer = null;
+    }
+
+    if (!ocorrencias || ocorrencias.length === 0) {
+      console.log('Nenhuma ocorrência para criar heatmap');
+      return;
+    }
+
+    const heatData = ocorrencias
+      .filter(ocorrencia => ocorrencia.latitude && ocorrencia.longitude)
+      .map(ocorrencia => [
+        parseFloat(ocorrencia.latitude),
+        parseFloat(ocorrencia.longitude),
+        1
+      ]);
+
+    console.log('Dados do heatmap:', heatData.length, 'pontos válidos');
+
+    if (heatData.length > 0) {
+      heatmapLayer = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        gradient: {
+          0.2: 'blue',
+          0.4: 'cyan',
+          0.6: 'yellow',
+          0.8: 'orange',
+          1.0: 'red'
+        }
+      });
+
+      heatmapLayer.addTo(map);
+      console.log('Heatmap adicionado ao mapa');
+    } else {
+      console.log('Nenhum ponto válido para o heatmap');
+    }
+  }
+
+  function atualizarVisualizacao() {
+    console.log('Atualizando visualização para:', currentViewMode, 'com', currentData.length, 'dados');
+
+    if (currentViewMode === 'markers') {
+      if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+        heatmapLayer = null;
+        console.log('Heatmap removido');
+      }
+
+      if (!map.hasLayer(marcadoresLayer)) {
+        marcadoresLayer.addTo(map);
+      }
+      exibirMarcadores(currentData);
+
+    } else if (currentViewMode === 'heatmap') {
+      marcadoresLayer.clearLayers();
+      if (map.hasLayer(marcadoresLayer)) {
+        map.removeLayer(marcadoresLayer);
+      }
+
+      criarHeatmap(currentData);
+    }
+  }
+
+  function exibirMarcadores(ocorrencias) {
+    marcadoresLayer.clearLayers();
+
+    ocorrencias.forEach(ocorrencia => {
+      const popupContent = `
+        <h4 style='margin-bottom:5px; font-size:16px;'>${ocorrencia.title}</h4>
+        <hr style='margin: 2px;'>
+        <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
+        <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
+        <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
+        <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
+        <a href='${ocorrencia.link}' target='_blank'>Ler notícia completa</a>
+      `;
+
+      const iconeConfig = iconesPorTema[ocorrencia.tema] || iconesPorTema.default;
+
+      L.marker([ocorrencia.latitude, ocorrencia.longitude], { icon: iconeConfig.icone })
+          .bindPopup(popupContent)
+          .addTo(marcadoresLayer);
+    });
+  }
+
   async function carregarOcorrencias() {
     const temaSelect = document.querySelector('#tema-wrapper .select-selected');
     const anoSelect = document.querySelector('#ano-wrapper .select-selected');
     const tema = temaSelect.dataset.value;
     const ano = anoSelect.dataset.value;
 
-    marcadoresLayer.clearLayers();
-
     try {
       const url = `http://127.0.0.1:5001/api/ocorrencias?tema=${tema}&ano=${ano}`;
+      console.log('Carregando dados de:', url);
       const response = await fetch(url);
       const ocorrencias = await response.json();
 
-      ocorrencias.forEach(ocorrencia => {
-        const popupContent = `
-              <h4 style='margin-bottom:5px; font-size:16px;'>${ocorrencia.title}</h4>
-              <hr style='margin: 2px;'>
-              <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
-              <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
-              <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
-              <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
-              <a href='${ocorrencia.link}' target='_blank'>Ler notícia completa</a>
-            `;
+      console.log('Dados recebidos:', ocorrencias.length, 'ocorrências');
+      currentData = ocorrencias;
 
-        const iconeConfig = iconesPorTema[ocorrencia.tema] || iconesPorTema.default;
+      atualizarVisualizacao();
 
-        L.marker([ocorrencia.latitude, ocorrencia.longitude], { icon: iconeConfig.icone })
-            .bindPopup(popupContent)
-            .addTo(marcadoresLayer);
-      });
     } catch (error) {
       console.error('Erro ao buscar ou processar as ocorrências:', error);
     }
@@ -335,7 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('http://127.0.0.1:5001/api/ocorrencias');
       const todasOcorrencias = await response.json();
 
+      console.log('Dados iniciais carregados:', todasOcorrencias.length, 'ocorrências');
+      currentData = todasOcorrencias;
+
       popularFiltros(todasOcorrencias);
+
+      atualizarVisualizacao();
     } catch (error) {
       console.error("Erro na inicialização da página:", error);
       alert("Falha ao carregar os dados iniciais.");
