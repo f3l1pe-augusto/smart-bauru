@@ -5,6 +5,45 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentViewMode = 'markers';
   let currentData = [];
   let currentRecurrentData = [];
+
+  function obterDataValida(publishedDate) {
+    if (!publishedDate) {
+      return null;
+    }
+
+    if (publishedDate instanceof Date) {
+      return Number.isNaN(publishedDate.getTime()) ? null : publishedDate;
+    }
+
+    let valorNormalizado = publishedDate;
+
+    if (typeof valorNormalizado === 'string') {
+      valorNormalizado = valorNormalizado.trim();
+      if (!valorNormalizado) {
+        return null;
+      }
+
+      if (valorNormalizado.includes(' ')) {
+        valorNormalizado = valorNormalizado.replace(' ', 'T');
+      }
+    }
+
+    const timestamp = Date.parse(valorNormalizado);
+    if (Number.isNaN(timestamp)) {
+      return null;
+    }
+
+    return new Date(timestamp);
+  }
+
+  function formatarDataBr(publishedDate) {
+    const dataValida = obterDataValida(publishedDate);
+    if (!dataValida) {
+      return 'Data indisponível';
+    }
+
+    return dataValida.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  }
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -386,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <hr style='margin: 2px;'>
         <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
         <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
-        <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
+        <b>Data:</b> ${formatarDataBr(ocorrencia.published_date)}<br>
         <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
         <a href='${ocorrencia.link}' target='_blank'>Ler notícia completa</a>
       `;
@@ -477,7 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ocorrencias.forEach(ocorrencia => {
       if (ocorrencia.tema) temas.add(ocorrencia.tema);
-      if (ocorrencia.published_date) anos.add(new Date(ocorrencia.published_date).getFullYear());
+      const dataValida = obterDataValida(ocorrencia.published_date);
+      if (dataValida) anos.add(dataValida.getUTCFullYear());
     });
 
     const temaItems = document.querySelector('#tema-wrapper .select-items');
