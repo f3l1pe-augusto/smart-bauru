@@ -9,10 +9,10 @@ CORS(app)
 def carregar_e_processar_dados():
   print("Iniciando o carregamento dos dados...")
   try:
-    df = pd.read_csv('data/df_all_news.csv')
+    df = pd.read_csv('data/news.csv')
     print(f"Arquivo CSV carregado com sucesso. {len(df)} linhas encontradas.")
   except FileNotFoundError:
-    print("ERRO CRÍTICO: O arquivo 'data/df_all_news.csv' não foi encontrado.")
+    print("ERRO CRÍTICO: O arquivo 'data/news.csv' não foi encontrado.")
     return pd.DataFrame()
 
   theme_keywords = {
