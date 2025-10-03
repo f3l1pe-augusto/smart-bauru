@@ -104,12 +104,7 @@ def get_ocorrencias():
   if df_filtrado.empty:
     return jsonify([])
 
-  df_limpo = df_filtrado.copy()
-  datetime_cols = df_limpo.select_dtypes(include=['datetime64[ns]', 'datetimetz']).columns
-  for col in datetime_cols:
-    df_limpo[col] = df_limpo[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
-
-  df_limpo = df_limpo.where(pd.notnull(df_limpo), None)
+  df_limpo = df_filtrado.where(pd.notnull(df_filtrado), None)
   dados_para_json = df_limpo.to_dict(orient='records')
   return jsonify(dados_para_json)
 
