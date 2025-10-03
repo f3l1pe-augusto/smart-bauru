@@ -86,15 +86,6 @@ else:
   print("AVISO: O servidor está a correr, mas sem dados para exibir. Verifique as mensagens de erro acima.")
 
 def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
-  """Gera agregações para o dashboard.
-
-  O dicionário retornado contém três listas de dicionários:
-
-  - ``por_tema``: lista com objetos ``{"tema": str, "contagem": int}``
-  - ``serie_mensal``: lista ordenada por mês no formato ``{"mes": "YYYY-MM", "contagem": int}``
-  - ``principais_enderecos``: até dez endereços com mais registros ``{"endereco": str, "contagem": int}``
-  """
-
   resultado = {
     "por_tema": [],
     "serie_mensal": [],

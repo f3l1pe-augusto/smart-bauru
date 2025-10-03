@@ -13,27 +13,6 @@ Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorr
 - Visualização com marcadores, mapa de calor ou ocorrências recorrentes
 - Filtros por tipo de ocorrência e ano
 
-## API
-
-### `GET /api/dashboard`
-Retorna agregações utilizadas no dashboard, aplicando os mesmos filtros de ano (`?ano=2024`) e tema (`?tema=Clima`) disponíveis em `/api/ocorrencias`.
-
-Formato da resposta:
-
-```json
-{
-  "por_tema": [
-    {"tema": "Infraestrutura", "contagem": 42}
-  ],
-  "serie_mensal": [
-    {"mes": "2024-01", "contagem": 15}
-  ],
-  "principais_enderecos": [
-    {"endereco": "Rua Exemplo, 123", "contagem": 3}
-  ]
-}
-```
-
 Exemplo de validação com `curl`:
 
 ```bash
