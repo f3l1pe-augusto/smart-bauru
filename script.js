@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentViewMode = 'markers';
   let currentData = [];
   let currentRecurrentData = [];
+  let dashboardCharts = {};
+  const dashboardPanel = document.getElementById('dashboard-panel');
+  const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -251,7 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="view-option" data-view="recurrent">
             <i class="fa fa-exclamation-triangle"></i>
             Ocorrências Recorrentes
-          </button>         
+          </button>
+          <button class="view-option" data-view="dashboard">
+            <i class="fa fa-chart-line"></i>
+            Dashboard
+          </button>
         </div>
       `;
 
@@ -347,6 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function atualizarVisualizacao() {
     console.log('Atualizando visualização para:', currentViewMode, 'com', currentData.length, 'dados');
 
+    renderDashboard();
+
     marcadoresLayer.clearLayers();
     recurrentesLayer.clearLayers();
     if (heatmapLayer) {
@@ -357,7 +366,14 @@ document.addEventListener('DOMContentLoaded', () => {
       map.removeLayer(recurrentesLayer);
     }
 
-    if (currentViewMode === 'markers') {
+    if (currentViewMode === 'dashboard') {
+      if (map.hasLayer(marcadoresLayer)) {
+        map.removeLayer(marcadoresLayer);
+      }
+      carregarEstatisticasDashboard();
+      return;
+
+    } else if (currentViewMode === 'markers') {
       if (!map.hasLayer(marcadoresLayer)) {
         marcadoresLayer.addTo(map);
       }
@@ -374,6 +390,237 @@ document.addEventListener('DOMContentLoaded', () => {
         map.removeLayer(marcadoresLayer);
       }
       carregarOcorrenciasRecorrentes();
+    }
+  }
+
+  function renderDashboard() {
+    if (!dashboardPanel) {
+      return;
+    }
+
+    if (currentViewMode === 'dashboard') {
+      dashboardPanel.style.display = 'block';
+      if (dashboardFeedback) {
+        dashboardFeedback.textContent = 'Carregando estatísticas...';
+      }
+    } else {
+      dashboardPanel.style.display = 'none';
+      if (dashboardFeedback) {
+        dashboardFeedback.textContent = '';
+      }
+    }
+
+    setTimeout(() => map.invalidateSize(), 200);
+  }
+
+  function normalizarColecao(dados, chavesRotulo, chavesValor, rotuloPadrao = 'N/A') {
+    if (!dados) {
+      return { labels: [], dados: [] };
+    }
+
+    const obterValor = (item, chaves, padrao) => {
+      for (const chave of chaves) {
+        if (!item || item[chave] === undefined || item[chave] === null) {
+          continue;
+        }
+
+        const valor = item[chave];
+        if (typeof valor === 'string') {
+          const valorAjustado = valor.trim();
+          if (valorAjustado !== '') {
+            return valorAjustado;
+          }
+        } else {
+          return valor;
+        }
+      }
+      return padrao;
+    };
+
+    const chavesRotuloArray = Array.isArray(chavesRotulo) ? chavesRotulo : [chavesRotulo];
+    const chavesValorArray = Array.isArray(chavesValor) ? chavesValor : [chavesValor];
+
+    if (Array.isArray(dados)) {
+      return {
+        labels: dados.map(item => String(obterValor(item, chavesRotuloArray, rotuloPadrao))),
+        dados: dados.map(item => Number(obterValor(item, chavesValorArray, 0)) || 0)
+      };
+    }
+
+    if (typeof dados === 'object') {
+      const labels = Object.keys(dados);
+      return {
+        labels,
+        dados: labels.map(label => {
+          const valor = dados[label];
+          if (typeof valor === 'object' && valor !== null) {
+            return Number(obterValor(valor, chavesValorArray, 0)) || 0;
+          }
+          return Number(valor ?? 0) || 0;
+        })
+      };
+    }
+
+    return { labels: [], dados: [] };
+  }
+
+  function atualizarGrafico(chartId, chartType, labels, data, datasetConfig = {}, extraOptions = {}) {
+    const canvas = document.getElementById(chartId);
+    if (!canvas || typeof Chart === 'undefined') {
+      return;
+    }
+
+    const defaultDataset = {
+      label: 'Ocorrências',
+      data,
+      backgroundColor: chartType === 'line'
+        ? 'rgba(54, 162, 235, 0.2)'
+        : [
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(255, 206, 86, 0.5)',
+            'rgba(153, 102, 255, 0.5)',
+            'rgba(255, 159, 64, 0.5)'
+          ],
+      borderColor: chartType === 'line'
+        ? 'rgba(54, 162, 235, 1)'
+        : [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 99, 132, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+      borderWidth: 2,
+      fill: chartType !== 'line',
+      tension: 0.3
+    };
+
+    const dataset = { ...defaultDataset, ...datasetConfig };
+
+    const defaultOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    };
+
+    const options = { ...defaultOptions, ...extraOptions };
+
+    if (dashboardCharts[chartId]) {
+      dashboardCharts[chartId].data.labels = labels;
+      dashboardCharts[chartId].data.datasets[0].data = data;
+      if (dataset.backgroundColor) {
+        dashboardCharts[chartId].data.datasets[0].backgroundColor = dataset.backgroundColor;
+      }
+      if (dataset.borderColor) {
+        dashboardCharts[chartId].data.datasets[0].borderColor = dataset.borderColor;
+      }
+      dashboardCharts[chartId].data.datasets[0].fill = dataset.fill;
+      dashboardCharts[chartId].data.datasets[0].tension = dataset.tension;
+      dashboardCharts[chartId].update();
+    } else {
+      dashboardCharts[chartId] = new Chart(canvas.getContext('2d'), {
+        type: chartType,
+        data: {
+          labels,
+          datasets: [dataset]
+        },
+        options
+      });
+    }
+  }
+
+  async function carregarEstatisticasDashboard() {
+    if (!dashboardPanel) {
+      return;
+    }
+
+    if (dashboardFeedback) {
+      dashboardFeedback.textContent = 'Carregando estatísticas...';
+    }
+
+    try {
+      const temaSelect = document.querySelector('#tema-wrapper .select-selected');
+      const anoSelect = document.querySelector('#ano-wrapper .select-selected');
+      const tema = temaSelect ? temaSelect.dataset.value : '';
+      const ano = anoSelect ? anoSelect.dataset.value : '';
+
+      const params = new URLSearchParams();
+      if (tema) params.append('tema', tema);
+      if (ano) params.append('ano', ano);
+
+      const url = params.toString()
+        ? `http://127.0.0.1:5001/api/dashboard?${params.toString()}`
+        : 'http://127.0.0.1:5001/api/dashboard';
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar estatísticas: ${response.status}`);
+      }
+
+      const dadosDashboard = await response.json();
+      const temasRaw = dadosDashboard.temas || dadosDashboard.porTema || dadosDashboard.por_tema;
+      const temporalRaw = dadosDashboard.temporal || dadosDashboard.serieTemporal || dadosDashboard.serie_temporal || dadosDashboard.serie_mensal;
+      const enderecosRaw = dadosDashboard.principais_enderecos || dadosDashboard.enderecos || dadosDashboard.topEnderecos;
+
+      const { labels: temaLabels, dados: temaDados } = normalizarColecao(
+        temasRaw,
+        ['tema', 'label', 'nome'],
+        ['contagem', 'total', 'quantidade', 'count'],
+        'Não informado'
+      );
+      const { labels: temporalLabels, dados: temporalDados } = normalizarColecao(
+        temporalRaw,
+        ['periodo', 'mes', 'data', 'label'],
+        ['contagem', 'total', 'quantidade', 'count']
+      );
+      const { labels: enderecosLabels, dados: enderecosDados } = normalizarColecao(
+        enderecosRaw,
+        ['endereco', 'label', 'local'],
+        ['contagem', 'total', 'quantidade', 'count'],
+        'Endereço não informado'
+      );
+
+      atualizarGrafico('chart-temas', 'bar', temaLabels, temaDados);
+      atualizarGrafico('chart-temporal', 'line', temporalLabels, temporalDados, { fill: false });
+      atualizarGrafico(
+        'chart-enderecos',
+        'bar',
+        enderecosLabels,
+        enderecosDados,
+        {
+          backgroundColor: 'rgba(255, 206, 86, 0.5)',
+          borderColor: 'rgba(255, 206, 86, 1)'
+        },
+        { indexAxis: 'y' }
+      );
+
+      if (dashboardFeedback) {
+        if (temaLabels.length === 0 && temporalLabels.length === 0 && enderecosLabels.length === 0) {
+          dashboardFeedback.textContent = 'Nenhuma estatística disponível no momento.';
+        } else {
+          dashboardFeedback.textContent = '';
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas do dashboard:', error);
+      if (dashboardFeedback) {
+        dashboardFeedback.textContent = 'Não foi possível carregar as estatísticas do dashboard.';
+      }
     }
   }
 
@@ -462,6 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (currentViewMode === 'recurrent') {
         await carregarOcorrenciasRecorrentes();
+      } else if (currentViewMode === 'dashboard') {
+        await carregarEstatisticasDashboard();
       } else {
         atualizarVisualizacao();
       }

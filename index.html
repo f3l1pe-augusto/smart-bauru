@@ -12,8 +12,28 @@
 <body>
 <div id="mapa"></div>
 
+<section id="dashboard-panel">
+  <div class="dashboard-content">
+    <h2>Dashboard de Ocorrências</h2>
+    <div class="dashboard-feedback" aria-live="polite"></div>
+    <div class="dashboard-chart">
+      <h3>Ocorrências por Tema</h3>
+      <canvas id="chart-temas"></canvas>
+    </div>
+    <div class="dashboard-chart">
+      <h3>Evolução Temporal de Ocorrências</h3>
+      <canvas id="chart-temporal"></canvas>
+    </div>
+    <div class="dashboard-chart">
+      <h3>Principais Endereços</h3>
+      <canvas id="chart-enderecos"></canvas>
+    </div>
+  </div>
+</section>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
