@@ -105,7 +105,7 @@ def get_ocorrencias():
     return jsonify([])
 
   df_limpo = df_filtrado.copy()
-  datetime_cols = df_limpo.select_dtypes(include=['datetime64[ns]', 'datetime64[ns, tz]']).columns
+  datetime_cols = df_limpo.select_dtypes(include=['datetime64[ns]', 'datetimetz']).columns
   for col in datetime_cols:
     df_limpo[col] = df_limpo[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
 
