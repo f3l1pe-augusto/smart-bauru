@@ -135,56 +135,58 @@ document.addEventListener('DOMContentLoaded', () => {
       L.DomEvent.disableScrollPropagation(container);
 
       container.innerHTML = `
-      <h3 style="cursor: pointer; user-select: none;">
-        Legenda <span style="float: right; transition: transform 0.3s;">▼</span>
-      </h3>
-      <div class="legend-content">
-        <div class="legend-item">
-          <div class="legend-icon marcador-azul"><i class="fa fa-cloud-rain"></i></div>
-          <span class="legend-text">Clima</span>
+        <h3 style="cursor: pointer; user-select: none;">
+          Legenda <span style="float: right; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h3>
+        <div class="legend-content">
+          <div class="legend-item">
+            <div class="legend-icon marcador-azul"><i class="fa fa-cloud-rain"></i></div>
+            <span class="legend-text">Clima</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-laranja"><i class="fa fa-gun"></i></div>
+            <span class="legend-text">Crimes</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-roxo"><i class="fa fa-user-secret"></i></div>
+            <span class="legend-text">Drogas e tráfico</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-vermelho"><i class="fa fa-exclamation-triangle"></i></div>
+            <span class="legend-text">Emergências</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-cinza"><i class="fa fa-building"></i></div>
+            <span class="legend-text">Infraestrutura</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-verde"><i class="fa fa-leaf"></i></div>
+            <span class="legend-text">Meio ambiente</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-preto"><i class="fa fa-ambulance"></i></div>
+            <span class="legend-text">Mortes e ferimentos</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-rosa"><i class="fa fa-users"></i></div>
+            <span class="legend-text">Problemas sociais</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-amarelo"><i class="fa fa-volume-up"></i></div>
+            <span class="legend-text">Reclamações</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-marrom"><i class="fa fa-car"></i></div>
+            <span class="legend-text">Trânsito</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-icon marcador-azul-claro"><i class="fa fa-hospital"></i></div>
+            <span class="legend-text">Saúde</span>
+          </div>
         </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-laranja"><i class="fa fa-gun"></i></div>
-          <span class="legend-text">Crimes</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-roxo"><i class="fa fa-user-secret"></i></div>
-          <span class="legend-text">Drogas e tráfico</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-vermelho"><i class="fa fa-exclamation-triangle"></i></div>
-          <span class="legend-text">Emergências</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-cinza"><i class="fa fa-building"></i></div>
-          <span class="legend-text">Infraestrutura</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-verde"><i class="fa fa-leaf"></i></div>
-          <span class="legend-text">Meio ambiente</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-preto"><i class="fa fa-ambulance"></i></div>
-          <span class="legend-text">Mortes e ferimentos</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-rosa"><i class="fa fa-users"></i></div>
-          <span class="legend-text">Problemas sociais</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-amarelo"><i class="fa fa-volume-up"></i></div>
-          <span class="legend-text">Reclamações</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-marrom"><i class="fa fa-car"></i></div>
-          <span class="legend-text">Trânsito</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-icon marcador-azul-claro"><i class="fa fa-hospital"></i></div>
-          <span class="legend-text">Saúde</span>
-        </div>
-      </div>
-    `;
+      `;
+
+      container.classList.add('collapsed');
 
       const title = container.querySelector('h3');
       title.addEventListener('click', function() {
@@ -253,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
           <button class="view-option" data-view="recurrent">
             <i class="fa fa-exclamation-triangle"></i>
-            Ocorrências Recorrentes
+            Pontos Recorrentes
           </button>
           <button class="view-option" data-view="dashboard">
             <i class="fa fa-chart-line"></i>

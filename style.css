@@ -273,7 +273,7 @@ body, html {
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  width: 375px;
+  width: 360px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -294,10 +294,12 @@ body, html {
   border-radius: 6px;
   padding: 3px;
   gap: 2px;
+  flex-wrap: wrap;
 }
 
 .view-option {
   flex: 1;
+  min-width: 120px;
   padding: 8px 12px;
   border: none;
   background: transparent;
@@ -311,6 +313,7 @@ body, html {
   align-items: center;
   justify-content: center;
   gap: 5px;
+  white-space: nowrap
 }
 
 .view-option.active {
