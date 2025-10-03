@@ -85,6 +85,63 @@ if not dataframe_global.empty:
 else:
   print("AVISO: O servidor está a correr, mas sem dados para exibir. Verifique as mensagens de erro acima.")
 
+def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
+  """Gera agregações para o dashboard.
+
+  O dicionário retornado contém três listas de dicionários:
+
+  - ``por_tema``: lista com objetos ``{"tema": str, "contagem": int}``
+  - ``serie_mensal``: lista ordenada por mês no formato ``{"mes": "YYYY-MM", "contagem": int}``
+  - ``principais_enderecos``: até dez endereços com mais registros ``{"endereco": str, "contagem": int}``
+  """
+
+  resultado = {
+    "por_tema": [],
+    "serie_mensal": [],
+    "principais_enderecos": []
+  }
+
+  if df.empty:
+    return resultado
+
+  contagem_tema = (
+    df.groupby('tema')
+      .size()
+      .reset_index(name='contagem')
+      .sort_values('contagem', ascending=False)
+  )
+  contagem_tema['contagem'] = contagem_tema['contagem'].astype(int)
+  resultado['por_tema'] = contagem_tema.to_dict(orient='records')
+
+  df_mensal = df.dropna(subset=['published_date']).copy()
+  if not df_mensal.empty:
+    df_mensal['mes'] = df_mensal['published_date'].dt.to_period('M')
+    serie_mensal = (
+      df_mensal.groupby('mes')
+        .size()
+        .reset_index(name='contagem')
+        .sort_values('mes')
+    )
+    serie_mensal['mes'] = serie_mensal['mes'].astype(str)
+    serie_mensal['contagem'] = serie_mensal['contagem'].astype(int)
+    resultado['serie_mensal'] = serie_mensal.to_dict(orient='records')
+
+  if 'address' in df.columns:
+    enderecos_validos = df['address'].fillna('').str.strip()
+    enderecos_validos = enderecos_validos[enderecos_validos != '']
+    if not enderecos_validos.empty:
+      top_enderecos = (
+        enderecos_validos
+          .value_counts()
+          .reset_index()
+      )
+      top_enderecos.columns = ['endereco', 'contagem']
+      top_enderecos = top_enderecos.sort_values('contagem', ascending=False).head(10)
+      top_enderecos['contagem'] = top_enderecos['contagem'].astype(int)
+      resultado['principais_enderecos'] = top_enderecos.to_dict(orient='records')
+
+  return resultado
+
 @app.route('/api/ocorrencias', methods=['GET'])
 def get_ocorrencias():
   print("Requisição recebida em /api/ocorrencias")
@@ -107,6 +164,25 @@ def get_ocorrencias():
   df_limpo = df_filtrado.where(pd.notnull(df_filtrado), None)
   dados_para_json = df_limpo.to_dict(orient='records')
   return jsonify(dados_para_json)
+
+@app.route('/api/dashboard', methods=['GET'])
+def get_dashboard():
+  print("Requisição recebida em /api/dashboard")
+  ano_filtro = request.args.get('ano')
+  tema_filtro = request.args.get('tema')
+  df_filtrado = dataframe_global.copy()
+
+  if ano_filtro:
+    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
+    df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
+    print(f"Filtrando por ano: {ano_filtro}")
+
+  if tema_filtro:
+    df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
+    print(f"Filtrando por tema: {tema_filtro}")
+
+  estatisticas = gerar_estatisticas_dashboard(df_filtrado)
+  return jsonify(estatisticas)
 
 @app.route('/api/ocorrencias-recorrentes', methods=['GET'])
 def get_ocorrencias_recorrentes():
