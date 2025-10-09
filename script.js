@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentData = [];
   let currentRecurrentData = [];
   let dashboardCharts = {};
+  const selectedTemas = new Set();
+  const selectedAnos = new Set();
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
@@ -217,14 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
       
             <label>Filtrar por Tema:</label>
             <div class="custom-select" id="tema-wrapper">
-              <div class="select-selected" data-value="">Selecione um Tema</div>
+              <div class="select-selected" data-value="">Selecione Temas</div>
               <div class="select-items select-hide">
               </div>
             </div>
-      
+
             <label>Filtrar por Ano:</label>
             <div class="custom-select" id="ano-wrapper">
-              <div class="select-selected" data-value="">Selecione um Ano</div>
+              <div class="select-selected" data-value="">Selecione Anos</div>
               <div class="select-items select-hide">
               </div>
             </div>
@@ -296,6 +298,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    document.querySelectorAll('.select-items').forEach(items => {
+      items.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    });
+
     document.addEventListener('click', function() {
       closeAllSelects();
     });
@@ -307,6 +315,41 @@ document.addEventListener('DOMContentLoaded', () => {
         items.classList.add('select-hide');
       }
     });
+  }
+
+  function updateSelectPlaceholder(wrapperId, selectedSet, defaultText) {
+    const selected = document.querySelector(`#${wrapperId} .select-selected`);
+    if (!selected) {
+      return;
+    }
+
+    if (selectedSet.size === 0) {
+      selected.textContent = defaultText;
+      selected.dataset.value = '';
+      return;
+    }
+
+    const values = Array.from(selectedSet).sort();
+    selected.dataset.value = values.join(',');
+
+    if (values.length <= 2) {
+      selected.textContent = values.join(', ');
+    } else {
+      selected.textContent = `${values.length} selecionados`;
+    }
+  }
+
+  function construirParametrosFiltro() {
+    const params = new URLSearchParams();
+    selectedTemas.forEach(tema => params.append('tema', tema));
+    selectedAnos.forEach(ano => params.append('ano', ano));
+    return params;
+  }
+
+  function construirUrlComFiltros(baseUrl) {
+    const params = construirParametrosFiltro();
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   }
 
   function criarHeatmap(ocorrencias) {
@@ -556,18 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const temaSelect = document.querySelector('#tema-wrapper .select-selected');
-      const anoSelect = document.querySelector('#ano-wrapper .select-selected');
-      const tema = temaSelect ? temaSelect.dataset.value : '';
-      const ano = anoSelect ? anoSelect.dataset.value : '';
-
-      const params = new URLSearchParams();
-      if (tema) params.append('tema', tema);
-      if (ano) params.append('ano', ano);
-
-      const url = params.toString()
-        ? `http://127.0.0.1:5001/api/dashboard?${params.toString()}`
-        : 'http://127.0.0.1:5001/api/dashboard';
+      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/dashboard');
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -673,13 +705,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function carregarOcorrenciasRecorrentes() {
-    const temaSelect = document.querySelector('#tema-wrapper .select-selected');
-    const anoSelect = document.querySelector('#ano-wrapper .select-selected');
-    const tema = temaSelect.dataset.value;
-    const ano = anoSelect.dataset.value;
-
     try {
-      const url = `http://127.0.0.1:5001/api/ocorrencias-recorrentes?tema=${tema}&ano=${ano}`;
+      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/ocorrencias-recorrentes');
       console.log('Carregando dados recorrentes de:', url);
       const response = await fetch(url);
       const ocorrenciasRecorrentes = await response.json();
@@ -695,13 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function carregarOcorrencias() {
-    const temaSelect = document.querySelector('#tema-wrapper .select-selected');
-    const anoSelect = document.querySelector('#ano-wrapper .select-selected');
-    const tema = temaSelect.dataset.value;
-    const ano = anoSelect.dataset.value;
-
     try {
-      const url = `http://127.0.0.1:5001/api/ocorrencias?tema=${tema}&ano=${ano}`;
+      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/ocorrencias');
       console.log('Carregando dados de:', url);
       const response = await fetch(url);
       const ocorrencias = await response.json();
@@ -734,37 +756,96 @@ document.addEventListener('DOMContentLoaded', () => {
     const temaItems = document.querySelector('#tema-wrapper .select-items');
     const anoItems = document.querySelector('#ano-wrapper .select-items');
 
+    if (temaItems) {
+      temaItems.innerHTML = '';
+    }
+    if (anoItems) {
+      anoItems.innerHTML = '';
+    }
+
     Array.from(temas).sort().forEach(tema => {
       const div = document.createElement('div');
-      div.textContent = tema;
-      div.dataset.value = tema;
-      div.addEventListener('click', function(e) {
+      div.classList.add('select-multi-item');
+
+      const label = document.createElement('label');
+      label.classList.add('select-multi-option');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = tema;
+      checkbox.checked = selectedTemas.has(tema);
+
+      checkbox.addEventListener('change', function(e) {
         e.stopPropagation();
-        const selected = this.closest('.custom-select').querySelector('.select-selected');
-        selected.textContent = this.textContent;
-        selected.dataset.value = this.dataset.value;
-        this.closest('.select-items').classList.add('select-hide');
+        if (this.checked) {
+          selectedTemas.add(this.value);
+        } else {
+          selectedTemas.delete(this.value);
+        }
+        div.classList.toggle('selected', this.checked);
+        updateSelectPlaceholder('tema-wrapper', selectedTemas, 'Selecione Temas');
         carregarOcorrencias();
       });
+
+      label.appendChild(checkbox);
+      const span = document.createElement('span');
+      span.textContent = tema;
+      label.appendChild(span);
+
+      div.appendChild(label);
+      div.classList.toggle('selected', checkbox.checked);
+      div.addEventListener('click', function(e) {
+        e.stopPropagation();
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      });
+
       temaItems.appendChild(div);
     });
 
     Array.from(anos).sort((a, b) => b - a).forEach(ano => {
       const div = document.createElement('div');
-      div.textContent = ano;
-      div.dataset.value = ano;
-      div.addEventListener('click', function(e) {
+      div.classList.add('select-multi-item');
+
+      const label = document.createElement('label');
+      label.classList.add('select-multi-option');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = String(ano);
+      checkbox.checked = selectedAnos.has(String(ano));
+
+      checkbox.addEventListener('change', function(e) {
         e.stopPropagation();
-        const selected = this.closest('.custom-select').querySelector('.select-selected');
-        selected.textContent = this.textContent;
-        selected.dataset.value = this.dataset.value;
-        this.closest('.select-items').classList.add('select-hide');
+        if (this.checked) {
+          selectedAnos.add(this.value);
+        } else {
+          selectedAnos.delete(this.value);
+        }
+        div.classList.toggle('selected', this.checked);
+        updateSelectPlaceholder('ano-wrapper', selectedAnos, 'Selecione Anos');
         carregarOcorrencias();
       });
+
+      label.appendChild(checkbox);
+      const span = document.createElement('span');
+      span.textContent = ano;
+      label.appendChild(span);
+
+      div.appendChild(label);
+      div.classList.toggle('selected', checkbox.checked);
+      div.addEventListener('click', function(e) {
+        e.stopPropagation();
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      });
+
       anoItems.appendChild(div);
     });
 
     initCustomSelects();
+    updateSelectPlaceholder('tema-wrapper', selectedTemas, 'Selecione Temas');
+    updateSelectPlaceholder('ano-wrapper', selectedAnos, 'Selecione Anos');
   }
 
   async function init() {
