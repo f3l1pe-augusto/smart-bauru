@@ -13,12 +13,6 @@ Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorr
 - Visualização com marcadores, mapa de calor, pontos recorrentes ou dashboards
 - Filtros por tipo de ocorrência e ano
 
-Exemplo de validação com `curl`:
-
-```bash
-curl "http://localhost:5001/api/dashboard?ano=2024&tema=Clima"
-```
-
 ## Instalação
 1. Clone o repositório:
    ```bash
@@ -50,4 +44,3 @@ curl "http://localhost:5001/api/dashboard?ano=2024&tema=Clima"
    ```
    http://localhost:8000
    ```
-   
