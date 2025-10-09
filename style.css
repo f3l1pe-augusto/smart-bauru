@@ -146,6 +146,21 @@ body, html {
   background-color: #f0f0f0;
 }
 
+.select-items input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.select-multi-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.select-multi-item.selected {
+  background-color: #f0f8ff;
+}
+
 .marcador-personalizado {
   display: flex;
   align-items: center;

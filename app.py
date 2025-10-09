@@ -136,18 +136,38 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
 @app.route('/api/ocorrencias', methods=['GET'])
 def get_ocorrencias():
   print("Requisição recebida em /api/ocorrencias")
-  ano_filtro = request.args.get('ano')
-  tema_filtro = request.args.get('tema')
+  anos_param = request.args.getlist('ano')
+  temas_param = request.args.getlist('tema')
   df_filtrado = dataframe_global.copy()
 
-  if ano_filtro:
-    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
-    df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
-    print(f"Filtrando por ano: {ano_filtro}")
+  anos_validos = []
+  for ano in anos_param:
+    if not ano:
+      continue
+    for parte in str(ano).split(','):
+      try:
+        anos_validos.append(int(parte))
+      except (TypeError, ValueError):
+        continue
 
-  if tema_filtro:
-    df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
-    print(f"Filtrando por tema: {tema_filtro}")
+  temas_validos = []
+  for tema in temas_param:
+    if not tema:
+      continue
+    partes = [valor.strip() for valor in str(tema).split(',') if valor.strip()]
+    temas_validos.extend(partes)
+
+  anos_validos = sorted(set(anos_validos))
+  temas_validos = list(dict.fromkeys(temas_validos))
+
+  if anos_validos:
+    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
+    df_filtrado = df_filtrado[df_filtrado['ano'].isin(anos_validos)]
+    print(f"Filtrando por anos: {anos_validos}")
+
+  if temas_validos:
+    df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
+    print(f"Filtrando por temas: {temas_validos}")
 
   if df_filtrado.empty:
     return jsonify([])
@@ -159,18 +179,38 @@ def get_ocorrencias():
 @app.route('/api/dashboard', methods=['GET'])
 def get_dashboard():
   print("Requisição recebida em /api/dashboard")
-  ano_filtro = request.args.get('ano')
-  tema_filtro = request.args.get('tema')
+  anos_param = request.args.getlist('ano')
+  temas_param = request.args.getlist('tema')
   df_filtrado = dataframe_global.copy()
 
-  if ano_filtro:
-    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
-    df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
-    print(f"Filtrando por ano: {ano_filtro}")
+  anos_validos = []
+  for ano in anos_param:
+    if not ano:
+      continue
+    for parte in str(ano).split(','):
+      try:
+        anos_validos.append(int(parte))
+      except (TypeError, ValueError):
+        continue
 
-  if tema_filtro:
-    df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
-    print(f"Filtrando por tema: {tema_filtro}")
+  temas_validos = []
+  for tema in temas_param:
+    if not tema:
+      continue
+    partes = [valor.strip() for valor in str(tema).split(',') if valor.strip()]
+    temas_validos.extend(partes)
+
+  anos_validos = sorted(set(anos_validos))
+  temas_validos = list(dict.fromkeys(temas_validos))
+
+  if anos_validos:
+    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
+    df_filtrado = df_filtrado[df_filtrado['ano'].isin(anos_validos)]
+    print(f"Filtrando por anos: {anos_validos}")
+
+  if temas_validos:
+    df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
+    print(f"Filtrando por temas: {temas_validos}")
 
   estatisticas = gerar_estatisticas_dashboard(df_filtrado)
   return jsonify(estatisticas)
@@ -178,18 +218,38 @@ def get_dashboard():
 @app.route('/api/ocorrencias-recorrentes', methods=['GET'])
 def get_ocorrencias_recorrentes():
   print("Requisição recebida em /api/ocorrencias-recorrentes")
-  ano_filtro = request.args.get('ano')
-  tema_filtro = request.args.get('tema')
+  anos_param = request.args.getlist('ano')
+  temas_param = request.args.getlist('tema')
   df_filtrado = dataframe_global.copy()
 
-  if ano_filtro:
-    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
-    df_filtrado = df_filtrado[df_filtrado['ano'] == int(ano_filtro)]
-    print(f"Filtrando por ano: {ano_filtro}")
+  anos_validos = []
+  for ano in anos_param:
+    if not ano:
+      continue
+    for parte in str(ano).split(','):
+      try:
+        anos_validos.append(int(parte))
+      except (TypeError, ValueError):
+        continue
 
-  if tema_filtro:
-    df_filtrado = df_filtrado[df_filtrado['tema'] == tema_filtro]
-    print(f"Filtrando por tema: {tema_filtro}")
+  temas_validos = []
+  for tema in temas_param:
+    if not tema:
+      continue
+    partes = [valor.strip() for valor in str(tema).split(',') if valor.strip()]
+    temas_validos.extend(partes)
+
+  anos_validos = sorted(set(anos_validos))
+  temas_validos = list(dict.fromkeys(temas_validos))
+
+  if anos_validos:
+    df_filtrado['ano'] = df_filtrado['published_date'].dt.year
+    df_filtrado = df_filtrado[df_filtrado['ano'].isin(anos_validos)]
+    print(f"Filtrando por anos: {anos_validos}")
+
+  if temas_validos:
+    df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
+    print(f"Filtrando por temas: {temas_validos}")
 
   if df_filtrado.empty:
     return jsonify([])
