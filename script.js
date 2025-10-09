@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let dashboardCharts = {};
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
+  const dashboardCloseButton = document.getElementById('dashboard-close');
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -235,6 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
     onRemove: function(map) {}
   });
 
+  function setActiveViewButton(viewMode) {
+    const viewButtons = document.querySelectorAll('.leaflet-control-view .view-option');
+    viewButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === viewMode);
+    });
+  }
+
   L.Control.View = L.Control.extend({
     onAdd: function(map) {
       const container = L.DomUtil.create('div', 'leaflet-control-view');
@@ -269,14 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', function() {
           const newViewMode = this.dataset.view;
           if (newViewMode !== currentViewMode) {
-            viewButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-
             currentViewMode = newViewMode;
+            setActiveViewButton(currentViewMode);
             atualizarVisualizacao();
           }
         });
       });
+
+      setActiveViewButton(currentViewMode);
 
       return container;
     },
@@ -286,6 +294,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewControl = new L.Control.View({ position: 'topright' }).addTo(map);
   const filterControl = new L.Control.Filter({ position: 'topright' }).addTo(map);
   const legendControl = new L.Control.Legend({ position: 'bottomleft' }).addTo(map);
+
+  if (dashboardCloseButton) {
+    dashboardCloseButton.addEventListener('click', () => {
+      if (currentViewMode !== 'markers') {
+        currentViewMode = 'markers';
+        setActiveViewButton(currentViewMode);
+        atualizarVisualizacao();
+      }
+    });
+  }
+
+  setActiveViewButton(currentViewMode);
 
   function initCustomSelects() {
     document.querySelectorAll('.select-selected').forEach(selectBtn => {
@@ -400,16 +420,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (currentViewMode === 'dashboard') {
-      dashboardPanel.style.display = 'block';
-      if (dashboardFeedback) {
-        dashboardFeedback.textContent = 'Carregando estatísticas...';
-      }
-    } else {
-      dashboardPanel.style.display = 'none';
-      if (dashboardFeedback) {
-        dashboardFeedback.textContent = '';
-      }
+    const dashboardAtivo = currentViewMode === 'dashboard';
+
+    dashboardPanel.style.display = dashboardAtivo ? 'block' : 'none';
+    dashboardPanel.classList.toggle('dashboard-fullscreen', dashboardAtivo);
+    document.body.classList.toggle('dashboard-open', dashboardAtivo);
+
+    if (dashboardFeedback) {
+      dashboardFeedback.textContent = dashboardAtivo ? 'Carregando estatísticas...' : '';
     }
 
     setTimeout(() => map.invalidateSize(), 200);
