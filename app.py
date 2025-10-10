@@ -130,6 +130,7 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
 
       enderecos_normalizados = enderecos_validos.apply(normalizar_endereco)
       enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != '']
+      enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != 'Bauru']
       if not enderecos_normalizados.empty:
         top_enderecos = (
           enderecos_normalizados
