@@ -121,15 +121,25 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
     enderecos_validos = df['address'].fillna('').str.strip()
     enderecos_validos = enderecos_validos[enderecos_validos != '']
     if not enderecos_validos.empty:
-      top_enderecos = (
-        enderecos_validos
-          .value_counts()
-          .reset_index()
-      )
-      top_enderecos.columns = ['endereco', 'contagem']
-      top_enderecos = top_enderecos.sort_values('contagem', ascending=False).head(10)
-      top_enderecos['contagem'] = top_enderecos['contagem'].astype(int)
-      resultado['principais_enderecos'] = top_enderecos.to_dict(orient='records')
+      def normalizar_endereco(endereco: str) -> str:
+        if not isinstance(endereco, str):
+          return ''
+        primeiro_segmento = endereco.split(',')[0]
+        primeiro_segmento = primeiro_segmento.split(' - ')[0]
+        return primeiro_segmento.strip()
+
+      enderecos_normalizados = enderecos_validos.apply(normalizar_endereco)
+      enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != '']
+      if not enderecos_normalizados.empty:
+        top_enderecos = (
+          enderecos_normalizados
+            .value_counts()
+            .reset_index()
+        )
+        top_enderecos.columns = ['endereco', 'contagem']
+        top_enderecos = top_enderecos.sort_values('contagem', ascending=False).head(10)
+        top_enderecos['contagem'] = top_enderecos['contagem'].astype(int)
+        resultado['principais_enderecos'] = top_enderecos.to_dict(orient='records')
 
   return resultado
 
