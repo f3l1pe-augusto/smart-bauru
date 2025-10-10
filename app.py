@@ -6,6 +6,15 @@ import ast
 app = Flask(__name__)
 CORS(app)
 
+
+def normalizar_endereco(endereco: str) -> str:
+  if not isinstance(endereco, str):
+    return ''
+  primeiro_segmento = endereco.split(',')[0]
+  primeiro_segmento = primeiro_segmento.split(' - ')[0]
+  return primeiro_segmento.strip()
+
+
 def carregar_e_processar_dados():
   print("Iniciando o carregamento dos dados...")
   try:
@@ -121,13 +130,6 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
     enderecos_validos = df['address'].fillna('').str.strip()
     enderecos_validos = enderecos_validos[enderecos_validos != '']
     if not enderecos_validos.empty:
-      def normalizar_endereco(endereco: str) -> str:
-        if not isinstance(endereco, str):
-          return ''
-        primeiro_segmento = endereco.split(',')[0]
-        primeiro_segmento = primeiro_segmento.split(' - ')[0]
-        return primeiro_segmento.strip()
-
       enderecos_normalizados = enderecos_validos.apply(normalizar_endereco)
       enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != '']
       enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != 'Bauru']
@@ -275,6 +277,8 @@ def get_ocorrencias_recorrentes():
   enderecos_por_local = df_filtrado.groupby('chave_local')['address'].agg(
     lambda x: x.mode().iloc[0] if not x.empty else 'Endereço não disponível'
   )
+  enderecos_por_local = enderecos_por_local.apply(normalizar_endereco)
+  enderecos_por_local = enderecos_por_local.replace('', 'Endereço não disponível')
 
   recorrencias = df_filtrado.groupby(['chave_local', 'tema']).size()
   recorrencias = recorrencias[recorrencias > 7]
@@ -294,7 +298,7 @@ def get_ocorrencias_recorrentes():
       'longitude': lon,
       'tema': row['tema'],
       'contagem': int(row['contagem']),
-      'endereco_comum': row['endereco_comum']
+      'endereco_comum': normalizar_endereco(row['endereco_comum']) or 'Endereço não disponível'
     })
 
   print(f"Encontradas {len(resultado)} ocorrências recorrentes")
