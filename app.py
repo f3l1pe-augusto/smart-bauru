@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import pandas as pd
 import ast
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -13,6 +14,18 @@ def normalizar_endereco(endereco: str) -> str:
   primeiro_segmento = endereco.split(',')[0]
   primeiro_segmento = primeiro_segmento.split(' - ')[0]
   return primeiro_segmento.strip()
+
+
+def extrair_bairros(address: str):
+  if not isinstance(address, str):
+    return []
+  partes = re.split(r',|\s-\s', address)
+  bairros = []
+  for parte in partes:
+    bairro = normalizar_endereco(parte)
+    if bairro:
+      bairros.append(bairro)
+  return bairros
 
 
 def carregar_e_processar_dados():
@@ -71,8 +84,17 @@ def carregar_e_processar_dados():
     print("AVISO: Nenhuma linha com coordenadas válidas foi encontrada após o processamento.")
     return pd.DataFrame()
 
+  df['bairro_lista'] = df['address'].apply(extrair_bairros)
   df_exploded = df.explode('coordinates_list')
   df_exploded.dropna(subset=['coordinates_list'], inplace=True)
+  df_exploded = df_exploded.explode('bairro_lista')
+
+  df_exploded['bairro'] = df_exploded['bairro_lista'].apply(normalizar_endereco)
+  df_exploded['bairro'] = df_exploded['bairro'].str.strip()
+  df_exploded = df_exploded[df_exploded['bairro'] != '']
+  df_exploded.drop_duplicates(subset=['title', 'published_date', 'bairro', 'coordinates_list'], inplace=True)
+
+  df_exploded.drop(columns=['bairro_lista'], inplace=True, errors='ignore')
 
   def extrair_lat(coord):
     if isinstance(coord, (list, tuple)) and len(coord) >= 1: return coord[0]
