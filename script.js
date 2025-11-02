@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let dashboardCharts = {};
   const selectedTemas = new Set();
   const selectedAnos = new Set();
+  const selectedBairros = new Set();
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
@@ -230,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="select-items select-hide">
               </div>
             </div>
+            <label>Filtrar por Bairro:</label>
+            <div class="custom-select" id="bairro-wrapper">
+              <div class="select-selected" data-value="">Selecione Bairros</div>
+              <div class="select-items select-hide">
+              </div>
+            </div>
           `;
 
       return container;
@@ -343,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     selectedTemas.forEach(tema => params.append('tema', tema));
     selectedAnos.forEach(ano => params.append('ano', ano));
+    selectedBairros.forEach(bairro => params.append('bairro', bairro));
     return params;
   }
 
@@ -666,6 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4 style='margin-bottom:5px; font-size:16px;'>${ocorrencia.title}</h4>
         <hr style='margin: 2px;'>
         <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
+        <b>Bairro:</b> ${ocorrencia.bairro || 'N/A'}<br>
         <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
         <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
         <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
@@ -747,20 +756,31 @@ document.addEventListener('DOMContentLoaded', () => {
   function popularFiltros(ocorrencias) {
     const temas = new Set();
     const anos = new Set();
+    const bairros = new Set();
 
     ocorrencias.forEach(ocorrencia => {
       if (ocorrencia.tema) temas.add(ocorrencia.tema);
       if (ocorrencia.published_date) anos.add(new Date(ocorrencia.published_date).getFullYear());
+      if (ocorrencia.bairro) {
+        const bairro = String(ocorrencia.bairro).trim();
+        if (bairro) {
+          bairros.add(bairro);
+        }
+      }
     });
 
     const temaItems = document.querySelector('#tema-wrapper .select-items');
     const anoItems = document.querySelector('#ano-wrapper .select-items');
+    const bairroItems = document.querySelector('#bairro-wrapper .select-items');
 
     if (temaItems) {
       temaItems.innerHTML = '';
     }
     if (anoItems) {
       anoItems.innerHTML = '';
+    }
+    if (bairroItems) {
+      bairroItems.innerHTML = '';
     }
 
     Array.from(temas).sort().forEach(tema => {
@@ -843,9 +863,52 @@ document.addEventListener('DOMContentLoaded', () => {
       anoItems.appendChild(div);
     });
 
+    Array.from(bairros).sort().forEach(bairro => {
+      const div = document.createElement('div');
+      div.classList.add('select-multi-item');
+
+      const label = document.createElement('label');
+      label.classList.add('select-multi-option');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = bairro;
+      checkbox.checked = selectedBairros.has(bairro);
+
+      checkbox.addEventListener('change', function(e) {
+        e.stopPropagation();
+        if (this.checked) {
+          selectedBairros.add(this.value);
+        } else {
+          selectedBairros.delete(this.value);
+        }
+        div.classList.toggle('selected', this.checked);
+        updateSelectPlaceholder('bairro-wrapper', selectedBairros, 'Selecione Bairros');
+        carregarOcorrencias();
+      });
+
+      label.appendChild(checkbox);
+      const span = document.createElement('span');
+      span.textContent = bairro;
+      label.appendChild(span);
+
+      div.appendChild(label);
+      div.classList.toggle('selected', checkbox.checked);
+      div.addEventListener('click', function(e) {
+        e.stopPropagation();
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      });
+
+      if (bairroItems) {
+        bairroItems.appendChild(div);
+      }
+    });
+
     initCustomSelects();
     updateSelectPlaceholder('tema-wrapper', selectedTemas, 'Selecione Temas');
     updateSelectPlaceholder('ano-wrapper', selectedAnos, 'Selecione Anos');
+    updateSelectPlaceholder('bairro-wrapper', selectedBairros, 'Selecione Bairros');
   }
 
   async function init() {
