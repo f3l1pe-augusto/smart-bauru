@@ -85,13 +85,13 @@ def carregar_e_processar_dados():
     return pd.DataFrame()
 
   df['bairro_lista'] = df['address'].apply(extrair_bairros)
+  df['bairro_lista'] = df['bairro_lista'].apply(lambda bairros: bairros if bairros else [None])
   df_exploded = df.explode('coordinates_list')
   df_exploded.dropna(subset=['coordinates_list'], inplace=True)
   df_exploded = df_exploded.explode('bairro_lista')
 
   df_exploded['bairro'] = df_exploded['bairro_lista'].apply(normalizar_endereco)
-  df_exploded['bairro'] = df_exploded['bairro'].str.strip()
-  df_exploded = df_exploded[df_exploded['bairro'] != '']
+  df_exploded['bairro'] = df_exploded['bairro'].fillna('').str.strip()
   df_exploded.drop_duplicates(subset=['title', 'published_date', 'bairro', 'coordinates_list'], inplace=True)
 
   df_exploded.drop(columns=['bairro_lista'], inplace=True, errors='ignore')
