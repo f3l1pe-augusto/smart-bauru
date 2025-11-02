@@ -28,6 +28,27 @@ def extrair_bairros(address: str):
   return bairros
 
 
+def normalizar_parametros_multivalores(parametros):
+  valores_normalizados = []
+  for valor in parametros:
+    if not valor:
+      continue
+    partes = [normalizar_endereco(parte) for parte in str(valor).split(',')]
+    for parte in partes:
+      parte = parte.strip()
+      if parte:
+        valores_normalizados.append(parte)
+
+  valores_unicos = []
+  vistos = set()
+  for valor in valores_normalizados:
+    if valor in vistos:
+      continue
+    vistos.add(valor)
+    valores_unicos.append(valor)
+  return valores_unicos
+
+
 def carregar_e_processar_dados():
   print("Iniciando o carregamento dos dados...")
   try:
@@ -148,23 +169,23 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
     serie_mensal['contagem'] = serie_mensal['contagem'].astype(int)
     resultado['serie_mensal'] = serie_mensal.to_dict(orient='records')
 
-  if 'address' in df.columns:
-    enderecos_validos = df['address'].fillna('').str.strip()
-    enderecos_validos = enderecos_validos[enderecos_validos != '']
-    if not enderecos_validos.empty:
-      enderecos_normalizados = enderecos_validos.apply(normalizar_endereco)
-      enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != '']
-      enderecos_normalizados = enderecos_normalizados[enderecos_normalizados != 'Bauru']
-      if not enderecos_normalizados.empty:
-        top_enderecos = (
-          enderecos_normalizados
+  if 'bairro' in df.columns:
+    bairros_validos = df['bairro'].fillna('').astype(str).str.strip()
+    bairros_validos = bairros_validos[bairros_validos != '']
+    if not bairros_validos.empty:
+      bairros_normalizados = bairros_validos.apply(normalizar_endereco)
+      bairros_normalizados = bairros_normalizados[bairros_normalizados != '']
+      bairros_normalizados = bairros_normalizados[bairros_normalizados != 'Bauru']
+      if not bairros_normalizados.empty:
+        top_bairros = (
+          bairros_normalizados
             .value_counts()
             .reset_index()
         )
-        top_enderecos.columns = ['endereco', 'contagem']
-        top_enderecos = top_enderecos.sort_values('contagem', ascending=False).head(10)
-        top_enderecos['contagem'] = top_enderecos['contagem'].astype(int)
-        resultado['principais_enderecos'] = top_enderecos.to_dict(orient='records')
+        top_bairros.columns = ['endereco', 'contagem']
+        top_bairros = top_bairros.sort_values('contagem', ascending=False).head(10)
+        top_bairros['contagem'] = top_bairros['contagem'].astype(int)
+        resultado['principais_enderecos'] = top_bairros.to_dict(orient='records')
 
   return resultado
 
@@ -173,6 +194,7 @@ def get_ocorrencias():
   print("Requisição recebida em /api/ocorrencias")
   anos_param = request.args.getlist('ano')
   temas_param = request.args.getlist('tema')
+  bairros_param = request.args.getlist('bairro')
   df_filtrado = dataframe_global.copy()
 
   anos_validos = []
@@ -194,6 +216,7 @@ def get_ocorrencias():
 
   anos_validos = sorted(set(anos_validos))
   temas_validos = list(dict.fromkeys(temas_validos))
+  bairros_validos = normalizar_parametros_multivalores(bairros_param)
 
   if anos_validos:
     df_filtrado['ano'] = df_filtrado['published_date'].dt.year
@@ -203,6 +226,10 @@ def get_ocorrencias():
   if temas_validos:
     df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
     print(f"Filtrando por temas: {temas_validos}")
+
+  if bairros_validos and 'bairro' in df_filtrado.columns:
+    df_filtrado = df_filtrado[df_filtrado['bairro'].isin(bairros_validos)]
+    print(f"Filtrando por bairros: {bairros_validos}")
 
   if df_filtrado.empty:
     return jsonify([])
@@ -216,6 +243,7 @@ def get_dashboard():
   print("Requisição recebida em /api/dashboard")
   anos_param = request.args.getlist('ano')
   temas_param = request.args.getlist('tema')
+  bairros_param = request.args.getlist('bairro')
   df_filtrado = dataframe_global.copy()
 
   anos_validos = []
@@ -237,6 +265,7 @@ def get_dashboard():
 
   anos_validos = sorted(set(anos_validos))
   temas_validos = list(dict.fromkeys(temas_validos))
+  bairros_validos = normalizar_parametros_multivalores(bairros_param)
 
   if anos_validos:
     df_filtrado['ano'] = df_filtrado['published_date'].dt.year
@@ -246,6 +275,10 @@ def get_dashboard():
   if temas_validos:
     df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
     print(f"Filtrando por temas: {temas_validos}")
+
+  if bairros_validos and 'bairro' in df_filtrado.columns:
+    df_filtrado = df_filtrado[df_filtrado['bairro'].isin(bairros_validos)]
+    print(f"Filtrando por bairros: {bairros_validos}")
 
   estatisticas = gerar_estatisticas_dashboard(df_filtrado)
   return jsonify(estatisticas)
@@ -255,6 +288,7 @@ def get_ocorrencias_recorrentes():
   print("Requisição recebida em /api/ocorrencias-recorrentes")
   anos_param = request.args.getlist('ano')
   temas_param = request.args.getlist('tema')
+  bairros_param = request.args.getlist('bairro')
   df_filtrado = dataframe_global.copy()
 
   anos_validos = []
@@ -276,6 +310,7 @@ def get_ocorrencias_recorrentes():
 
   anos_validos = sorted(set(anos_validos))
   temas_validos = list(dict.fromkeys(temas_validos))
+  bairros_validos = normalizar_parametros_multivalores(bairros_param)
 
   if anos_validos:
     df_filtrado['ano'] = df_filtrado['published_date'].dt.year
@@ -285,6 +320,10 @@ def get_ocorrencias_recorrentes():
   if temas_validos:
     df_filtrado = df_filtrado[df_filtrado['tema'].isin(temas_validos)]
     print(f"Filtrando por temas: {temas_validos}")
+
+  if bairros_validos and 'bairro' in df_filtrado.columns:
+    df_filtrado = df_filtrado[df_filtrado['bairro'].isin(bairros_validos)]
+    print(f"Filtrando por bairros: {bairros_validos}")
 
   if df_filtrado.empty:
     return jsonify([])
@@ -296,11 +335,17 @@ def get_ocorrencias_recorrentes():
     round(df_filtrado['longitude'], precisao)
   ))
 
-  enderecos_por_local = df_filtrado.groupby('chave_local')['address'].agg(
-    lambda x: x.mode().iloc[0] if not x.empty else 'Endereço não disponível'
-  )
-  enderecos_por_local = enderecos_por_local.apply(normalizar_endereco)
-  enderecos_por_local = enderecos_por_local.replace('', 'Endereço não disponível')
+  def obter_bairro_predominante(series):
+    serie_limpa = series.dropna().astype(str).str.strip()
+    serie_limpa = serie_limpa[serie_limpa != '']
+    if serie_limpa.empty:
+      return 'Bairro não disponível'
+    moda = serie_limpa.mode()
+    if not moda.empty:
+      return normalizar_endereco(moda.iloc[0]) or 'Bairro não disponível'
+    return normalizar_endereco(serie_limpa.iloc[0]) or 'Bairro não disponível'
+
+  enderecos_por_local = df_filtrado.groupby('chave_local')['bairro'].agg(obter_bairro_predominante)
 
   recorrencias = df_filtrado.groupby(['chave_local', 'tema']).size()
   recorrencias = recorrencias[recorrencias > 7]
@@ -320,7 +365,7 @@ def get_ocorrencias_recorrentes():
       'longitude': lon,
       'tema': row['tema'],
       'contagem': int(row['contagem']),
-      'endereco_comum': normalizar_endereco(row['endereco_comum']) or 'Endereço não disponível'
+      'endereco_comum': enderecos_por_local.get(row['chave_local'], 'Bairro não disponível')
     })
 
   print(f"Encontradas {len(resultado)} ocorrências recorrentes")
