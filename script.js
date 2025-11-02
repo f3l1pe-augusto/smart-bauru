@@ -11,6 +11,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectedBairros = new Set();
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
+  const API_BASE_URL = (() => {
+    const meta = document.querySelector('meta[name="api-base-url"]');
+    const candidates = [
+      window.APP_API_BASE_URL,
+      window.API_BASE_URL,
+      window.__API_BASE_URL__,
+      meta && meta.content,
+      window.appConfig && window.appConfig.apiBaseUrl
+    ].filter(value => typeof value === 'string' && value.trim().length > 0);
+
+    if (candidates.length > 0) {
+      return candidates[0].replace(/\/+$/, '');
+    }
+
+    const origin = (typeof window.location !== 'undefined' && window.location.origin !== 'null')
+      ? window.location.origin
+      : '';
+    return origin.replace(/\/+$/, '');
+  })();
+
+  function construirApiUrl(path = '') {
+    if (typeof path !== 'string' || path.trim() === '') {
+      return API_BASE_URL;
+    }
+
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+
+    const sanitizedBase = API_BASE_URL.replace(/\/+$/, '');
+    const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${sanitizedBase}${sanitizedPath}`;
+  }
   const map = L.map('mapa').setView([-22.3245, -49.0749], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -354,7 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return params;
   }
 
-  function construirUrlComFiltros(baseUrl) {
+  function construirUrlComFiltros(endpoint) {
+    const baseUrl = construirApiUrl(endpoint);
     const params = construirParametrosFiltro();
     const queryString = params.toString();
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
@@ -607,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/dashboard');
+      const url = construirUrlComFiltros('/api/dashboard');
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -715,7 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function carregarOcorrenciasRecorrentes() {
     try {
-      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/ocorrencias-recorrentes');
+      const url = construirUrlComFiltros('/api/ocorrencias-recorrentes');
       console.log('Carregando dados recorrentes de:', url);
       const response = await fetch(url);
       const ocorrenciasRecorrentes = await response.json();
@@ -732,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function carregarOcorrencias() {
     try {
-      const url = construirUrlComFiltros('http://127.0.0.1:5001/api/ocorrencias');
+      const url = construirUrlComFiltros('/api/ocorrencias');
       console.log('Carregando dados de:', url);
       const response = await fetch(url);
       const ocorrencias = await response.json();
@@ -913,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function init() {
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/ocorrencias');
+      const response = await fetch(construirApiUrl('/api/ocorrencias'));
       const todasOcorrencias = await response.json();
 
       console.log('Dados iniciais carregados:', todasOcorrencias.length, 'ocorrências');
