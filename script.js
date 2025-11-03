@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectedTemas = new Set();
   const selectedAnos = new Set();
   const selectedBairros = new Set();
+  const filtroTemasRefs = new Map();
+  const filtroAnosRefs = new Map();
+  const filtroBairrosRefs = new Map();
+  const todosTemas = new Set();
+  const todosAnos = new Set();
+  const todosBairros = new Set();
+  let filtrosInicializados = false;
   let globalSelectCloseHandlerAttached = false;
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
@@ -393,6 +400,99 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       selected.textContent = `${values.length} selecionados`;
     }
+  }
+
+  const compararTexto = (a, b) => String(a).localeCompare(String(b), 'pt-BR', { sensitivity: 'accent' });
+  const compararAnoDesc = (a, b) => Number(b) - Number(a);
+
+  function criarItemFiltro(valor, wrapperId, selectedSet, placeholderText, referenciasMap) {
+    const valorStr = String(valor);
+    const div = document.createElement('div');
+    div.classList.add('select-multi-item');
+    div.dataset.value = valorStr;
+
+    const label = document.createElement('label');
+    label.classList.add('select-multi-option');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = valorStr;
+    checkbox.checked = selectedSet.has(valorStr);
+
+    checkbox.addEventListener('change', function(e) {
+      e.stopPropagation();
+      if (this.checked) {
+        selectedSet.add(valorStr);
+      } else {
+        selectedSet.delete(valorStr);
+      }
+      div.classList.toggle('selected', this.checked);
+      updateSelectPlaceholder(wrapperId, selectedSet, placeholderText);
+      carregarOcorrencias();
+    });
+
+    label.appendChild(checkbox);
+
+    const span = document.createElement('span');
+    span.textContent = valorStr;
+    label.appendChild(span);
+
+    div.appendChild(label);
+    div.classList.toggle('selected', checkbox.checked);
+
+    div.addEventListener('click', function(e) {
+      e.stopPropagation();
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event('change'));
+    });
+
+    referenciasMap.set(valorStr, { div, checkbox });
+    return { div, checkbox };
+  }
+
+  function garantirOpcoesFiltro(wrapperId, valoresOrdenados, selectedSet, placeholderText, referenciasMap, compareFn) {
+    const container = document.querySelector(`#${wrapperId} .select-items`);
+    if (!container) {
+      console.warn(`Container de filtros '${wrapperId}' não encontrado.`);
+      return;
+    }
+
+    valoresOrdenados.forEach(valor => {
+      const valorStr = String(valor);
+      if (referenciasMap.has(valorStr)) {
+        return;
+      }
+
+      const { div } = criarItemFiltro(valorStr, wrapperId, selectedSet, placeholderText, referenciasMap);
+      const filhos = Array.from(container.children);
+      const insertBefore = filhos.find(child => {
+        const childValue = child.dataset.value || '';
+        return compareFn(childValue, valorStr) > 0;
+      });
+
+      if (insertBefore) {
+        container.insertBefore(div, insertBefore);
+      } else {
+        container.appendChild(div);
+      }
+    });
+  }
+
+  function atualizarSelecoesFiltro(wrapperId, selectedSet, referenciasMap, placeholderText, valoresDisponiveis) {
+    referenciasMap.forEach(({ checkbox, div }, valor) => {
+      const isSelected = selectedSet.has(valor);
+      if (checkbox.checked !== isSelected) {
+        checkbox.checked = isSelected;
+      }
+      div.classList.toggle('selected', isSelected);
+
+      if (valoresDisponiveis) {
+        const disponivel = valoresDisponiveis.has(valor);
+        div.classList.toggle('unavailable', !disponivel && !isSelected);
+      }
+    });
+
+    updateSelectPlaceholder(wrapperId, selectedSet, placeholderText);
   }
 
   function construirParametrosFiltro() {
@@ -806,176 +906,54 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function popularFiltros(ocorrencias) {
-    const temas = new Set();
-    const anos = new Set();
-    const bairros = new Set();
+    const temasDisponiveis = new Set();
+    const anosDisponiveis = new Set();
+    const bairrosDisponiveis = new Set();
 
     ocorrencias.forEach(ocorrencia => {
-      if (ocorrencia.tema) temas.add(ocorrencia.tema);
-      if (ocorrencia.published_date) anos.add(new Date(ocorrencia.published_date).getFullYear());
+      if (ocorrencia.tema) {
+        const tema = String(ocorrencia.tema).trim();
+        if (tema) {
+          temasDisponiveis.add(tema);
+          todosTemas.add(tema);
+        }
+      }
+
+      if (ocorrencia.published_date) {
+        const dataPublicacao = new Date(ocorrencia.published_date);
+        const ano = dataPublicacao.getFullYear();
+        if (!Number.isNaN(ano)) {
+          const anoStr = String(ano);
+          anosDisponiveis.add(anoStr);
+          todosAnos.add(anoStr);
+        }
+      }
+
       if (ocorrencia.bairro) {
         const bairro = String(ocorrencia.bairro).trim();
         if (bairro) {
-          bairros.add(bairro);
+          bairrosDisponiveis.add(bairro);
+          todosBairros.add(bairro);
         }
       }
     });
 
-    const temaItems = document.querySelector('#tema-wrapper .select-items');
-    const anoItems = document.querySelector('#ano-wrapper .select-items');
-    const bairroItems = document.querySelector('#bairro-wrapper .select-items');
+    const temasOrdenados = Array.from(todosTemas).sort(compararTexto);
+    const anosOrdenados = Array.from(todosAnos).sort(compararAnoDesc);
+    const bairrosOrdenados = Array.from(todosBairros).sort(compararTexto);
 
-    if (!temaItems && !anoItems && !bairroItems) {
-      console.warn('Nenhum container de filtros encontrado. Pulando popularFiltros.');
-      return;
+    garantirOpcoesFiltro('tema-wrapper', temasOrdenados, selectedTemas, 'Selecione Temas', filtroTemasRefs, compararTexto);
+    garantirOpcoesFiltro('ano-wrapper', anosOrdenados, selectedAnos, 'Selecione Anos', filtroAnosRefs, compararAnoDesc);
+    garantirOpcoesFiltro('bairro-wrapper', bairrosOrdenados, selectedBairros, 'Selecione Bairros', filtroBairrosRefs, compararTexto);
+
+    atualizarSelecoesFiltro('tema-wrapper', selectedTemas, filtroTemasRefs, 'Selecione Temas', temasDisponiveis);
+    atualizarSelecoesFiltro('ano-wrapper', selectedAnos, filtroAnosRefs, 'Selecione Anos', anosDisponiveis);
+    atualizarSelecoesFiltro('bairro-wrapper', selectedBairros, filtroBairrosRefs, 'Selecione Bairros', bairrosDisponiveis);
+
+    if (!filtrosInicializados) {
+      initCustomSelects();
+      filtrosInicializados = true;
     }
-
-    if (temaItems) {
-      temaItems.innerHTML = '';
-    }
-    if (anoItems) {
-      anoItems.innerHTML = '';
-    }
-    if (bairroItems) {
-      bairroItems.innerHTML = '';
-    }
-
-    if (temaItems) {
-      Array.from(temas).sort().forEach(tema => {
-        const div = document.createElement('div');
-        div.classList.add('select-multi-item');
-
-        const label = document.createElement('label');
-        label.classList.add('select-multi-option');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = tema;
-        checkbox.checked = selectedTemas.has(tema);
-
-        checkbox.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.checked) {
-            selectedTemas.add(this.value);
-          } else {
-            selectedTemas.delete(this.value);
-          }
-          div.classList.toggle('selected', this.checked);
-          updateSelectPlaceholder('tema-wrapper', selectedTemas, 'Selecione Temas');
-          carregarOcorrencias();
-        });
-
-        label.appendChild(checkbox);
-        const span = document.createElement('span');
-        span.textContent = tema;
-        label.appendChild(span);
-
-        div.appendChild(label);
-        div.classList.toggle('selected', checkbox.checked);
-        div.addEventListener('click', function(e) {
-          e.stopPropagation();
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event('change'));
-        });
-
-        temaItems.appendChild(div);
-      });
-    } else {
-      console.warn('Elemento de temas não encontrado. Pulando população de temas.');
-    }
-
-    if (anoItems) {
-      Array.from(anos).sort((a, b) => b - a).forEach(ano => {
-        const div = document.createElement('div');
-        div.classList.add('select-multi-item');
-
-        const label = document.createElement('label');
-        label.classList.add('select-multi-option');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = String(ano);
-        checkbox.checked = selectedAnos.has(String(ano));
-
-        checkbox.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.checked) {
-            selectedAnos.add(this.value);
-          } else {
-            selectedAnos.delete(this.value);
-          }
-          div.classList.toggle('selected', this.checked);
-          updateSelectPlaceholder('ano-wrapper', selectedAnos, 'Selecione Anos');
-          carregarOcorrencias();
-        });
-
-        label.appendChild(checkbox);
-        const span = document.createElement('span');
-        span.textContent = ano;
-        label.appendChild(span);
-
-        div.appendChild(label);
-        div.classList.toggle('selected', checkbox.checked);
-        div.addEventListener('click', function(e) {
-          e.stopPropagation();
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event('change'));
-        });
-
-        anoItems.appendChild(div);
-      });
-    } else {
-      console.warn('Elemento de anos não encontrado. Pulando população de anos.');
-    }
-
-    if (bairroItems) {
-      Array.from(bairros).sort().forEach(bairro => {
-        const div = document.createElement('div');
-        div.classList.add('select-multi-item');
-
-        const label = document.createElement('label');
-        label.classList.add('select-multi-option');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = bairro;
-        checkbox.checked = selectedBairros.has(bairro);
-
-        checkbox.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.checked) {
-            selectedBairros.add(this.value);
-          } else {
-            selectedBairros.delete(this.value);
-          }
-          div.classList.toggle('selected', this.checked);
-          updateSelectPlaceholder('bairro-wrapper', selectedBairros, 'Selecione Bairros');
-          carregarOcorrencias();
-        });
-
-        label.appendChild(checkbox);
-        const span = document.createElement('span');
-        span.textContent = bairro;
-        label.appendChild(span);
-
-        div.appendChild(label);
-        div.classList.toggle('selected', checkbox.checked);
-        div.addEventListener('click', function(e) {
-          e.stopPropagation();
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event('change'));
-        });
-
-        bairroItems.appendChild(div);
-      });
-    } else {
-      console.warn('Elemento de bairros não encontrado. Pulando população de bairros.');
-    }
-
-    initCustomSelects();
-    updateSelectPlaceholder('tema-wrapper', selectedTemas, 'Selecione Temas');
-    updateSelectPlaceholder('ano-wrapper', selectedAnos, 'Selecione Anos');
-    updateSelectPlaceholder('bairro-wrapper', selectedBairros, 'Selecione Bairros');
   }
 
   async function init() {
