@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectedTemas = new Set();
   const selectedAnos = new Set();
   const selectedBairros = new Set();
+  let globalSelectCloseHandlerAttached = false;
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
   const API_BASE_URL = (() => {
@@ -331,22 +332,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function initCustomSelects() {
     document.querySelectorAll('.select-selected').forEach(selectBtn => {
+      if (selectBtn.dataset.initialized === 'true') {
+        return;
+      }
+
+      selectBtn.dataset.initialized = 'true';
       selectBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         closeAllSelects(this);
-        this.nextElementSibling.classList.toggle('select-hide');
+        if (this.nextElementSibling) {
+          this.nextElementSibling.classList.toggle('select-hide');
+        }
       });
     });
 
     document.querySelectorAll('.select-items').forEach(items => {
+      if (items.dataset.initialized === 'true') {
+        return;
+      }
+
+      items.dataset.initialized = 'true';
       items.addEventListener('click', function(e) {
         e.stopPropagation();
       });
     });
 
-    document.addEventListener('click', function() {
-      closeAllSelects();
-    });
+    if (!globalSelectCloseHandlerAttached) {
+      document.addEventListener('click', function() {
+        closeAllSelects();
+      });
+      globalSelectCloseHandlerAttached = true;
+    }
   }
 
   function closeAllSelects(exceptThis) {
@@ -773,6 +789,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       console.log('Dados recebidos:', ocorrencias.length, 'ocorrências');
       currentData = ocorrencias;
+
+      popularFiltros(ocorrencias);
 
       if (currentViewMode === 'recurrent') {
         await carregarOcorrenciasRecorrentes();
