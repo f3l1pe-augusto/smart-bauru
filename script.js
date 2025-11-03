@@ -36,7 +36,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const origin = (typeof window.location !== 'undefined' && window.location.origin !== 'null')
       ? window.location.origin
       : '';
-    return origin.replace(/\/+$/, '');
+
+    if (origin) {
+      try {
+        const parsedOrigin = new URL(origin);
+        const fallbackPorts = new Set(['8000', '5500', '4173']);
+
+        if (parsedOrigin.protocol === 'file:') {
+          return 'http://localhost:5001';
+        }
+
+        if (fallbackPorts.has(parsedOrigin.port)) {
+          const fallbackHost = parsedOrigin.hostname === '0.0.0.0'
+            ? '127.0.0.1'
+            : (parsedOrigin.hostname || 'localhost');
+          return `${parsedOrigin.protocol}//${fallbackHost}:5001`;
+        }
+
+        if (parsedOrigin.port === '5001' || parsedOrigin.port === '') {
+          return origin.replace(/\/+$/, '');
+        }
+      } catch (error) {
+        console.warn('Não foi possível interpretar a origem atual. Usando fallback padrão.', error);
+      }
+    }
+
+    const fallback = origin || 'http://localhost:5001';
+    return fallback.replace(/\/+$/, '');
   })();
 
   function construirApiUrl(path = '') {
