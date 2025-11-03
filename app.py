@@ -33,11 +33,11 @@ def normalizar_parametros_multivalores(parametros):
   for valor in parametros:
     if not valor:
       continue
-    partes = [normalizar_endereco(parte) for parte in str(valor).split(',')]
-    for parte in partes:
-      parte = parte.strip()
-      if parte:
-        valores_normalizados.append(parte)
+    partes_brutas = re.split(r',|\s-\s', str(valor))
+    for parte in partes_brutas:
+      normalizado = normalizar_endereco(parte)
+      if normalizado:
+        valores_normalizados.append(normalizado)
 
   valores_unicos = []
   vistos = set()
@@ -110,9 +110,27 @@ def carregar_e_processar_dados():
   df_exploded = df.explode('coordinates_list')
   df_exploded.dropna(subset=['coordinates_list'], inplace=True)
   df_exploded = df_exploded.explode('bairro_lista')
+  df_exploded = df_exploded.copy()
+
+  def limpar_texto(valor):
+    if isinstance(valor, str):
+      return valor.strip()
+    return ''
 
   df_exploded['bairro'] = df_exploded['bairro_lista'].apply(normalizar_endereco)
-  df_exploded['bairro'] = df_exploded['bairro'].fillna('').str.strip()
+  df_exploded['bairro'] = df_exploded['bairro'].apply(limpar_texto)
+
+  bairros_vazios = df_exploded['bairro'] == ''
+  if bairros_vazios.any():
+    fallback_address = df_exploded.loc[bairros_vazios, 'address'].apply(normalizar_endereco)
+    fallback_address = fallback_address.apply(limpar_texto)
+    fallback_search_term = df_exploded.loc[bairros_vazios, 'search_term'].apply(normalizar_endereco)
+    fallback_search_term = fallback_search_term.apply(limpar_texto)
+    fallback_bairros = fallback_address.where(fallback_address != '', fallback_search_term)
+    df_exploded.loc[bairros_vazios, 'bairro'] = fallback_bairros.apply(limpar_texto)
+
+  df_exploded['bairro'] = df_exploded['bairro'].apply(limpar_texto)
+  df_exploded = df_exploded[df_exploded['bairro'] != ''].copy()
   df_exploded.drop_duplicates(subset=['title', 'published_date', 'bairro', 'coordinates_list'], inplace=True)
 
   df_exploded.drop(columns=['bairro_lista'], inplace=True, errors='ignore')
