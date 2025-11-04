@@ -366,7 +366,7 @@ def get_ocorrencias_recorrentes():
   enderecos_por_local = df_filtrado.groupby('chave_local')['bairro'].agg(obter_bairro_predominante)
 
   recorrencias = df_filtrado.groupby(['chave_local', 'tema']).size()
-  recorrencias = recorrencias[recorrencias > 7]
+  recorrencias = recorrencias[recorrencias > 15]
   df_recorrencias = recorrencias.reset_index(name='contagem')
 
   if df_recorrencias.empty:
