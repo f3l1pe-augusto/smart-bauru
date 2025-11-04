@@ -850,7 +850,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4 style='margin-bottom:5px; font-size:16px;'>${ocorrencia.title}</h4>
         <hr style='margin: 2px;'>
         <b>Tema:</b> ${ocorrencia.tema || 'N/A'}<br>
-        <b>Bairro:</b> ${ocorrencia.bairro || 'N/A'}<br>
         <b>Local:</b> ${ocorrencia.address || 'N/A'}<br>
         <b>Data:</b> ${new Date(ocorrencia.published_date).toLocaleDateString('pt-BR')}<br>
         <b>Fonte:</b> ${ocorrencia.site || 'N/A'}<br>
