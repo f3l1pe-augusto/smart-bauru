@@ -849,14 +849,14 @@ document.addEventListener('DOMContentLoaded', () => {
         totalOcorrenciasBruto = dadosDashboard.total_ocorrencias;
       } else if (dadosDashboard.totalOcorrencias !== undefined && dadosDashboard.totalOcorrencias !== null) {
         totalOcorrenciasBruto = dadosDashboard.totalOcorrencias;
-      } else if (totalPorTemas !== null) {
-        totalOcorrenciasBruto = totalPorTemas;
-      } else if (totalPorDadosAtuais !== null) {
-        totalOcorrenciasBruto = totalPorDadosAtuais;
       } else if (dadosDashboard.total !== undefined && dadosDashboard.total !== null) {
         totalOcorrenciasBruto = dadosDashboard.total;
       } else if (dadosDashboard.count !== undefined && dadosDashboard.count !== null) {
         totalOcorrenciasBruto = dadosDashboard.count;
+      } else if (totalPorTemas !== null) {
+        totalOcorrenciasBruto = totalPorTemas;
+      } else if (totalPorDadosAtuais !== null) {
+        totalOcorrenciasBruto = totalPorDadosAtuais;
       }
 
       if (dashboardTotalElement) {
