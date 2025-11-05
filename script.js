@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let globalSelectCloseHandlerAttached = false;
   const dashboardPanel = document.getElementById('dashboard-panel');
   const dashboardFeedback = dashboardPanel ? dashboardPanel.querySelector('.dashboard-feedback') : null;
+  const dashboardTotalElement = dashboardPanel ? dashboardPanel.querySelector('#dashboard-total-count') : null;
   const API_BASE_URL = (() => {
     const meta = document.querySelector('meta[name="api-base-url"]');
     const candidates = [
@@ -632,6 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dashboardFeedback) {
         dashboardFeedback.textContent = 'Carregando estatísticas...';
       }
+      if (dashboardTotalElement) {
+        dashboardTotalElement.textContent = '...';
+      }
     } else {
       dashboardPanel.style.display = 'none';
       if (dashboardFeedback) {
@@ -791,6 +795,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const dadosDashboard = await response.json();
+      const totalOcorrenciasBruto = dadosDashboard.totalOcorrencias ?? dadosDashboard.total_ocorrencias ?? dadosDashboard.total ?? dadosDashboard.count;
+      if (dashboardTotalElement) {
+        const totalNumero = Number(totalOcorrenciasBruto);
+        if (Number.isFinite(totalNumero) && totalNumero >= 0) {
+          dashboardTotalElement.textContent = totalNumero.toLocaleString('pt-BR');
+        } else {
+          dashboardTotalElement.textContent = '0';
+        }
+      }
       const temasRaw = dadosDashboard.temas || dadosDashboard.porTema || dadosDashboard.por_tema;
       const temporalRaw = dadosDashboard.temporal || dadosDashboard.serieTemporal || dadosDashboard.serie_temporal || dadosDashboard.serie_mensal;
       const enderecosRaw = dadosDashboard.principais_enderecos || dadosDashboard.enderecos || dadosDashboard.topEnderecos;
@@ -838,6 +851,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Erro ao carregar estatísticas do dashboard:', error);
       if (dashboardFeedback) {
         dashboardFeedback.textContent = 'Não foi possível carregar as estatísticas do dashboard.';
+      }
+      if (dashboardTotalElement) {
+        dashboardTotalElement.textContent = '0';
       }
     }
   }

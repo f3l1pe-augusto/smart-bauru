@@ -159,22 +159,36 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
   resultado = {
     "por_tema": [],
     "serie_mensal": [],
-    "principais_enderecos": []
+    "principais_enderecos": [],
+    "total_ocorrencias": 0
   }
 
   if df.empty:
     return resultado
 
+  def remover_duplicatas(base: pd.DataFrame, colunas_preferencia):
+    colunas_existentes = [col for col in colunas_preferencia if col in base.columns]
+    if not colunas_existentes:
+      return base.drop_duplicates()
+    return base.drop_duplicates(subset=colunas_existentes)
+
+  df_unicos = remover_duplicatas(df, ['link', 'title', 'published_date', 'tema'])
+  resultado['total_ocorrencias'] = int(len(df_unicos))
+
+  if df_unicos.empty:
+    return resultado
+
   contagem_tema = (
-    df.groupby('tema')
+    df_unicos.groupby('tema', dropna=False)
       .size()
       .reset_index(name='contagem')
       .sort_values('contagem', ascending=False)
   )
+  contagem_tema['tema'] = contagem_tema['tema'].fillna('Não informado')
   contagem_tema['contagem'] = contagem_tema['contagem'].astype(int)
   resultado['por_tema'] = contagem_tema.to_dict(orient='records')
 
-  df_mensal = df.dropna(subset=['published_date']).copy()
+  df_mensal = df_unicos.dropna(subset=['published_date']).copy()
   if not df_mensal.empty:
     df_mensal['mes'] = df_mensal['published_date'].dt.to_period('M')
     serie_mensal = (
@@ -188,7 +202,8 @@ def gerar_estatisticas_dashboard(df: pd.DataFrame) -> dict:
     resultado['serie_mensal'] = serie_mensal.to_dict(orient='records')
 
   if 'bairro' in df.columns:
-    bairros_validos = df['bairro'].fillna('').astype(str).str.strip()
+    df_enderecos = remover_duplicatas(df, ['link', 'title', 'published_date', 'bairro'])
+    bairros_validos = df_enderecos['bairro'].fillna('').astype(str).str.strip()
     bairros_validos = bairros_validos[bairros_validos != '']
     if not bairros_validos.empty:
       bairros_normalizados = bairros_validos.apply(normalizar_endereco)
