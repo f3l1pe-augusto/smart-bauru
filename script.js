@@ -285,22 +285,22 @@ document.addEventListener('DOMContentLoaded', () => {
       container.innerHTML = `
             <h3>Filtros</h3>
       
-            <label>Filtrar por Tema:</label>
+            <label>Filtrar por tema:</label>
             <div class="custom-select" id="tema-wrapper">
-              <div class="select-selected" data-value="">Selecione Temas</div>
+              <div class="select-selected" data-value="">Selecione temas</div>
               <div class="select-items select-hide">
               </div>
             </div>
 
-            <label>Filtrar por Ano:</label>
+            <label>Filtrar por ano:</label>
             <div class="custom-select" id="ano-wrapper">
-              <div class="select-selected" data-value="">Selecione Anos</div>
+              <div class="select-selected" data-value="">Selecione anos</div>
               <div class="select-items select-hide">
               </div>
             </div>
-            <label>Filtrar por Bairro:</label>
+            <label>Filtrar por bairro:</label>
             <div class="custom-select" id="bairro-wrapper">
-              <div class="select-selected" data-value="">Selecione Bairros</div>
+              <div class="select-selected" data-value="">Selecione bairros</div>
               <div class="select-items select-hide">
               </div>
             </div>
@@ -327,11 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
           <button class="view-option" data-view="heatmap">
             <i class="fa fa-fire"></i>
-            Mapa de Calor
+            Mapa de calor
           </button>
           <button class="view-option" data-view="recurrent">
             <i class="fa fa-exclamation-triangle"></i>
-            Pontos Recorrentes
+            Pontos recorrentes
           </button>
           <button class="view-option" data-view="dashboard">
             <i class="fa fa-chart-line"></i>
@@ -967,13 +967,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const anosOrdenados = Array.from(todosAnos).sort(compararAnoDesc);
     const bairrosOrdenados = Array.from(todosBairros).sort(compararTexto);
 
-    garantirOpcoesFiltro('tema-wrapper', temasOrdenados, selectedTemas, 'Selecione Temas', filtroTemasRefs, compararTexto);
-    garantirOpcoesFiltro('ano-wrapper', anosOrdenados, selectedAnos, 'Selecione Anos', filtroAnosRefs, compararAnoDesc);
-    garantirOpcoesFiltro('bairro-wrapper', bairrosOrdenados, selectedBairros, 'Selecione Bairros', filtroBairrosRefs, compararTexto);
+    garantirOpcoesFiltro('tema-wrapper', temasOrdenados, selectedTemas, 'Selecione temas', filtroTemasRefs, compararTexto);
+    garantirOpcoesFiltro('ano-wrapper', anosOrdenados, selectedAnos, 'Selecione anos', filtroAnosRefs, compararAnoDesc);
+    garantirOpcoesFiltro('bairro-wrapper', bairrosOrdenados, selectedBairros, 'Selecione bairros', filtroBairrosRefs, compararTexto);
 
-    atualizarSelecoesFiltro('tema-wrapper', selectedTemas, filtroTemasRefs, 'Selecione Temas', temasDisponiveis);
-    atualizarSelecoesFiltro('ano-wrapper', selectedAnos, filtroAnosRefs, 'Selecione Anos', anosDisponiveis);
-    atualizarSelecoesFiltro('bairro-wrapper', selectedBairros, filtroBairrosRefs, 'Selecione Bairros', bairrosDisponiveis);
+    atualizarSelecoesFiltro('tema-wrapper', selectedTemas, filtroTemasRefs, 'Selecione temas', temasDisponiveis);
+    atualizarSelecoesFiltro('ano-wrapper', selectedAnos, filtroAnosRefs, 'Selecione anos', anosDisponiveis);
+    atualizarSelecoesFiltro('bairro-wrapper', selectedBairros, filtroBairrosRefs, 'Selecione bairros', bairrosDisponiveis);
 
     if (!filtrosInicializados) {
       initCustomSelects();
