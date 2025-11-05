@@ -34,6 +34,17 @@ body, html {
   color: #1f2933;
 }
 
+#dashboard-panel .dashboard-total {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2933;
+}
+
+#dashboard-panel .dashboard-total strong {
+  font-weight: 600;
+  color: #0f172a;
+}
+
 #dashboard-panel .dashboard-chart h3 {
   margin: 0 0 12px 0;
   font-size: 18px;
