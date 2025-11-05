@@ -795,15 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const dadosDashboard = await response.json();
-      const totalOcorrenciasBruto = dadosDashboard.totalOcorrencias ?? dadosDashboard.total_ocorrencias ?? dadosDashboard.total ?? dadosDashboard.count;
-      if (dashboardTotalElement) {
-        const totalNumero = Number(totalOcorrenciasBruto);
-        if (Number.isFinite(totalNumero) && totalNumero >= 0) {
-          dashboardTotalElement.textContent = totalNumero.toLocaleString('pt-BR');
-        } else {
-          dashboardTotalElement.textContent = '0';
-        }
-      }
       const temasRaw = dadosDashboard.temas || dadosDashboard.porTema || dadosDashboard.por_tema;
       const temporalRaw = dadosDashboard.temporal || dadosDashboard.serieTemporal || dadosDashboard.serie_temporal || dadosDashboard.serie_mensal;
       const enderecosRaw = dadosDashboard.principais_enderecos || dadosDashboard.enderecos || dadosDashboard.topEnderecos;
@@ -825,6 +816,57 @@ document.addEventListener('DOMContentLoaded', () => {
         ['contagem', 'total', 'quantidade', 'count'],
         'Endereço não informado'
       );
+
+      const obterInteiroSeguro = valor => {
+        if (valor === null || valor === undefined) {
+          return null;
+        }
+
+        if (typeof valor === 'number') {
+          return Number.isFinite(valor) ? Math.round(valor) : null;
+        }
+
+        if (typeof valor === 'string') {
+          const apenasDigitos = valor.replace(/\D+/g, '');
+          if (apenasDigitos === '') {
+            return null;
+          }
+          const numero = Number(apenasDigitos);
+          return Number.isFinite(numero) ? Math.round(numero) : null;
+        }
+
+        const numeroGenerico = Number(valor);
+        return Number.isFinite(numeroGenerico) ? Math.round(numeroGenerico) : null;
+      };
+
+      const totalPorTemas = temaDados.length > 0
+        ? temaDados.reduce((acumulado, valor) => acumulado + (Number.isFinite(valor) ? valor : 0), 0)
+        : null;
+      const totalPorDadosAtuais = Array.isArray(currentData) ? currentData.length : null;
+
+      let totalOcorrenciasBruto;
+      if (dadosDashboard.total_ocorrencias !== undefined && dadosDashboard.total_ocorrencias !== null) {
+        totalOcorrenciasBruto = dadosDashboard.total_ocorrencias;
+      } else if (dadosDashboard.totalOcorrencias !== undefined && dadosDashboard.totalOcorrencias !== null) {
+        totalOcorrenciasBruto = dadosDashboard.totalOcorrencias;
+      } else if (totalPorTemas !== null) {
+        totalOcorrenciasBruto = totalPorTemas;
+      } else if (totalPorDadosAtuais !== null) {
+        totalOcorrenciasBruto = totalPorDadosAtuais;
+      } else if (dadosDashboard.total !== undefined && dadosDashboard.total !== null) {
+        totalOcorrenciasBruto = dadosDashboard.total;
+      } else if (dadosDashboard.count !== undefined && dadosDashboard.count !== null) {
+        totalOcorrenciasBruto = dadosDashboard.count;
+      }
+
+      if (dashboardTotalElement) {
+        const totalNormalizado = obterInteiroSeguro(totalOcorrenciasBruto);
+        if (totalNormalizado !== null && totalNormalizado >= 0) {
+          dashboardTotalElement.textContent = totalNormalizado.toLocaleString('pt-BR');
+        } else {
+          dashboardTotalElement.textContent = '0';
+        }
+      }
 
       atualizarGrafico('chart-temas', 'bar', temaLabels, temaDados);
       atualizarGrafico('chart-temporal', 'line', temporalLabels, temporalDados, { fill: false });
