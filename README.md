@@ -1,6 +1,8 @@
 # Smart Bauru
 Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorrências urbanas na cidade de Bauru–SP
 
+> [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17566665.svg)](https://doi.org/10.5281/zenodo.17566665)
+
 ![Smart Bauru](./images/smart-bauru.png)
 
 ## Tecnologias Utilizadas
