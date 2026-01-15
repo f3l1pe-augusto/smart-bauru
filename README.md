@@ -5,7 +5,7 @@ Um Sistema de Informação Geográfica (SIG) para mapeamento e análise de ocorr
 
 ![Smart Bauru](./images/smart-bauru.png)
 
-## Tecnologias Utilizadas
+## Tecnologias utilizadas
 - Backend: Python, Flask
 - Frontend: HTML, CSS, JavaScript, Leaflet.js
 - Banco de Dados: CSV
